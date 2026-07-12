@@ -27,6 +27,7 @@ namespace YARG.Core.Engine
         public delegate void CodaEndEvent(CodaSection codaSection);
         public delegate void ComboResetEvent();
         public delegate void ComboIncrementEvent(int amount);
+        public delegate void PlayerRevivedEvent();
 
         public delegate void UnisonBonusAwardedEvent();
 
@@ -53,6 +54,7 @@ namespace YARG.Core.Engine
         public SyncWhammyAxisEvent?         OnSyncWhammyAxis;
         public SyncSustainReleasedEvent?    OnSyncSustainReleased;
         public SyncOverstrumEvent?          OnSyncOverstrum;
+        public PlayerRevivedEvent?    OnPlayerRevived;
 
         public bool CanStarPowerActivate => BaseStats.StarPowerTickAmount >= TicksPerHalfSpBar;
         public int BaseScore { get; protected set; }
@@ -189,6 +191,8 @@ namespace YARG.Core.Engine
         }
 
         protected bool InhibitCoda = false;
+
+        protected bool PlayerNeedsRevive = false;
 
         public EngineTimer GetStarPowerWhammyTimer() => StarPowerWhammyTimer;
 
@@ -663,6 +667,16 @@ namespace YARG.Core.Engine
 
         protected void ActivateStarPower()
         {
+            // I don't think RB quite did it this way, but we'll let players burn half a bar to revive bandmates
+            // even if they are already in SP, so long as they have enough
+            if (PlayerNeedsRevive && BaseStats.StarPowerTickAmount >= TicksPerFullSpBar / 2)
+            {
+                // Dock starpower and send revive event
+                BaseStats.StarPowerTickAmount -= TicksPerFullSpBar / 2;
+                OnPlayerRevived?.Invoke();
+                return;
+            }
+
             if (BaseStats.IsStarPowerActive)
             {
                 return;
@@ -834,6 +848,16 @@ namespace YARG.Core.Engine
 
             CurrentCodaIndex++;
             InhibitCoda = false;
+        }
+
+        public void PlayerHasFailed()
+        {
+            PlayerNeedsRevive = true;
+        }
+
+        public void PlayerHasRevived()
+        {
+            PlayerNeedsRevive = false;
         }
     }
 }
