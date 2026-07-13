@@ -57,6 +57,8 @@ namespace YARG.Core.Engine
         public override BaseEngineParameters BaseParameters => EngineParameters;
         public override BaseStats            BaseStats      => EngineStats;
 
+        protected virtual int WildcardMask => -1;
+
         protected BaseEngine(InstrumentDifficulty<TNoteType> chart, SyncTrack syncTrack,
             TEngineParams engineParameters, bool isChordSeparate, bool isBot)
             : base(syncTrack, isChordSeparate, isBot)
@@ -871,7 +873,7 @@ namespace YARG.Core.Engine
                 return;
             }
 
-            if (newNote == RequiredLaneNote)
+            if (newNote == RequiredLaneNote || RequiredLaneNote == WildcardMask)
             {
                 // Required input received, extend the lane expiration time
                 var currentNote = Notes[NoteIndex].ParentOrSelf;
@@ -910,6 +912,11 @@ namespace YARG.Core.Engine
             if (!IsLaneActive)
             {
                 return false;
+            }
+
+            if (RequiredLaneNote == WildcardMask)
+            {
+                return true;
             }
 
             if (inputNote == RequiredLaneNote || (NextTrillNote != -1 && inputNote == NextTrillNote))
@@ -1796,10 +1803,15 @@ namespace YARG.Core.Engine
 
         protected abstract bool ProximalLaneForgivesInput(int inputNote, TNoteType laneNote);
 
-        protected static bool LaneIncludesInputNote(int inputNote, TNoteType laneNote)
+        protected bool LaneIncludesInputNote(int inputNote, TNoteType laneNote)
         {
             var inputMask = 1 << inputNote;
             var (requiredLaneNote, otherNoteInTrill) = GetLaneNotes(laneNote);
+
+            if (requiredLaneNote == WildcardMask)
+            {
+                return true;
+            }
 
             if ((inputMask & requiredLaneNote) != 0)
             {

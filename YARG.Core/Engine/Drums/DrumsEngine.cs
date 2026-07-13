@@ -28,11 +28,23 @@ namespace YARG.Core.Engine.Drums
 
         protected bool IsMidiDrumsInput;
 
+        protected override int WildcardMask => _wildcardMask;
+
+        private int _wildcardMask;
+
         protected DrumsEngine(InstrumentDifficulty<DrumNote> chart, SyncTrack syncTrack,
             DrumsEngineParameters engineParameters, bool isBot, bool isMidiDrumsInput)
             : base(chart, syncTrack, engineParameters, true, isBot)
         {
-            foreach(var note in Notes)
+            _wildcardMask = EngineParameters.Mode switch
+            {
+                DrumsEngineParameters.DrumMode.NonProFourLane or
+                DrumsEngineParameters.DrumMode.ProFourLane => (int) FourLaneDrumPad.Wildcard,
+                DrumsEngineParameters.DrumMode.FiveLane => (int) FiveLaneDrumPad.Wildcard,
+                _ => -1
+            };
+
+            foreach (var note in Notes)
             {
                 foreach(var all in note.AllNotes)
                 {
@@ -616,7 +628,9 @@ namespace YARG.Core.Engine.Drums
         protected override bool ProximalLaneForgivesInput(int inputNote, DrumNote laneNote)
         {
             var (requiredLaneNote, otherNoteInTrill) = GetLaneNotes(laneNote);
-            return inputNote == requiredLaneNote || (otherNoteInTrill != -1 && otherNoteInTrill == inputNote);
+            return inputNote == requiredLaneNote ||
+                (otherNoteInTrill != -1 && otherNoteInTrill == inputNote) ||
+                requiredLaneNote == WildcardMask;
         }
 
         /// <summary>The wire "Overstrum" maps to <c>Overhit()</c> for drums.</summary>
