@@ -178,6 +178,7 @@ namespace YARG.Core.Song.Cache
         private readonly List<CONEntryGroup> conEntryGroups = new();
         private readonly List<CONUpdateGroup> updateGroups = new();
         private readonly Dictionary<string, IniUpdateInfo> iniUpdateInfos = new();
+        private readonly List<FixedArray<byte>> iniUpdateDtaBuffers = new();
         private readonly List<PackedCONUpgradeGroup> packedUpgradeGroups = new();
         private readonly List<UnpackedCONUpgradeGroup> unpackedUpgradeGroups = new();
 
@@ -343,7 +344,8 @@ namespace YARG.Core.Song.Cache
                     {
                         try
                         {
-                            using var data = FixedArray.LoadFile(updatesDtaPath);
+                            var data = FixedArray.LoadFile(updatesDtaPath);
+                            lock (iniUpdateDtaBuffers) { iniUpdateDtaBuffers.Add(data); }
                             var container = YARGDTAReader.Create(data);
                             while (YARGDTAReader.StartNode(ref container))
                             {
@@ -364,11 +366,17 @@ namespace YARG.Core.Song.Cache
                     }
 
                     var shortnames = new List<string>();
+                    var candidates = new HashSet<string>(dtasByShortname.Keys);
                     foreach (var songDir in new DirectoryInfo(updatesDir).EnumerateDirectories())
                     {
-                        string shortname = songDir.Name;
-                        string updateMid = Path.Combine(songDir.FullName, shortname + "_update.mid");
-                        string updateImage = Path.Combine(songDir.FullName, "gen", shortname + "_keep.png_xbox");
+                        candidates.Add(songDir.Name);
+                    }
+
+                    foreach (string shortname in candidates)
+                    {
+                        string songDirPath = Path.Combine(updatesDir, shortname);
+                        string updateMid = Path.Combine(songDirPath, shortname + "_update.mid");
+                        string updateImage = Path.Combine(songDirPath, "gen", shortname + "_keep.png_xbox");
 
                         bool hasMidi = File.Exists(updateMid);
                         bool hasImage = File.Exists(updateImage);
@@ -597,6 +605,10 @@ namespace YARG.Core.Song.Cache
             foreach (var group in packedUpgradeGroups)
             {
                 group.Dispose();
+            }
+            foreach (var buffer in iniUpdateDtaBuffers)
+            {
+                buffer.Dispose();
             }
         }
 
