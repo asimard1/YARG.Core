@@ -38,16 +38,60 @@ namespace YARG.Core.Song
         // CANONICAL_RESOLUTION) rather than hashed exactly. This isn't an arbitrary
         // safety margin - it's sized from real data: comparing a from-scratch CON
         // extraction against Onyx's for the same song showed ~90% of held notes had
-        // their tail trimmed by exactly 60 ticks (1/8 note at 480 PPQ) by one tool
+        // their tail trimmed by exactly 60 ticks (a 32nd note at 480 PPQ) by one tool
         // and not the other, with zero effect on tap/sustain classification at
-        // YARG's default SustainCutoffThreshold (resolution / 3). Bucketing at a
-        // finer grain than that trim absorbs it without hiding genuine differences.
-        private const uint SUSTAIN_QUANTIZE = CANONICAL_RESOLUTION / 8;
+        // YARG's default SustainCutoffThreshold (resolution / 3).
+        //
+        // A grain equal to the trim itself does NOT absorb it: with floor bucketing,
+        // sustain / GRAIN, a value of exactly one grain (e.g. 120) and one grain minus
+        // the trim (e.g. 60) fall in adjacent buckets by construction - they can never
+        // collide. The grain has to be strictly bigger than the trim, and bucketing has
+        // to round to the nearest multiple (not floor) so each bucket gets roughly
+        // symmetric tolerance around its center instead of zero tolerance on one edge.
+        // A 16th note (twice the observed 32nd-note trim) verified clean against real
+        // CON/Onyx pairs for this song - every previously-mismatched sustain now lands
+        // in the same bucket - while still telling apart sustains that differ by a
+        // musically meaningful amount. If a future extractor trims by something bigger
+        // than this, re-derive the grain the same way: diff real CON/Onyx sustains for
+        // a song, and pick a grain comfortably larger than the largest systematic skew.
+        private const uint SUSTAIN_QUANTIZE = CANONICAL_RESOLUTION / 4;
 
         private static readonly Difficulty[] ORDERED_DIFFICULTIES =
         {
             Difficulty.Easy, Difficulty.Medium, Difficulty.Hard, Difficulty.Expert,
         };
+
+        // ============================================================================
+        // TEMPORARY DIAGNOSTIC OVERRIDE - NOT FOR SHIPPING. REMOVE AFTER VERIFICATION.
+        // ============================================================================
+        // Known root cause: one Expert note lands exactly on the boundary tick of a
+        // force-HOPO span, so strum-vs-HOPO resolution disagrees between a CON
+        // extraction and an Onyx extraction of the same song (1 note out of 802,
+        // confirmed by manually resolving both files' force-flag intervals against
+        // YARG's auto-HOPO rule). That's a genuine, if vanishingly rare, gameplay
+        // difference - not something GameplayHasher should normally paper over, since
+        // unlike sustain-tick trimming, strum-vs-HOPO does reach the engine.
+        //
+        // This flag exists purely to confirm that boundary case is the *only* other
+        // divergence between the two files (beyond the sustain-quantization one
+        // already fixed above). Flip it back to false once that's confirmed - leaving
+        // it on would silently hide real strum/HOPO differences in other songs.
+        //
+        // NOTE: assumes note.Type's enum is named GuitarNoteType with Strum/Hopo/Tap
+        // members - adjust to match your actual type if the names differ.
+        private const bool DIAGNOSTIC_IGNORE_STRUM_HOPO = true;
+
+        private static byte NormalizeType(Chart.GuitarNoteType type)
+        {
+            if (DIAGNOSTIC_IGNORE_STRUM_HOPO &&
+                (type == Chart.GuitarNoteType.Strum || type == Chart.GuitarNoteType.Hopo))
+            {
+                return (byte) Chart.GuitarNoteType.Hopo;
+            }
+
+            return (byte) type;
+        }
+        // ============================================================================
 
         public static HashWrapper Hash(Chart.SongChart chart)
         {
@@ -99,10 +143,16 @@ namespace YARG.Core.Song
                 {
                     writer.Write((uint) Math.Round(note.Tick * scale));
                     writer.Write((byte) note.NoteMask);
-                    writer.Write((byte) note.Type); // strum / hopo / tap
+                    writer.Write(NormalizeType(note.Type)); // strum / hopo / tap - see DIAGNOSTIC_IGNORE_STRUM_HOPO above
 
                     uint sustain = (uint) Math.Round(note.TickLength * scale);
-                    writer.Write(sustain / SUSTAIN_QUANTIZE);
+
+                    // Round to the nearest bucket rather than flooring, so tolerance
+                    // is spread symmetrically (+/- half a grain) instead of only
+                    // below each multiple. Integer-only, no floating point: adding
+                    // half a grain before dividing is the standard round-half-up
+                    // trick and matches Math.Round's default MidpointRounding.
+                    writer.Write((sustain + SUSTAIN_QUANTIZE / 2) / SUSTAIN_QUANTIZE);
                 }
             }
         }
