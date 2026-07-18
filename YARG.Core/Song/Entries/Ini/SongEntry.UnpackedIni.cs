@@ -82,40 +82,10 @@ namespace YARG.Core.Song
 
         private StemMixer? LoadUpdateMoggAudio(float speed, double volume, SongStem[] ignoreStems)
         {
-            bool clampStemVolume = _metadata.Source.ToLowerInvariant() == "yarg";
-            var mixer = GlobalAudioHandler.CreateMixer(ToString(), speed, volume, clampStemVolume: clampStemVolume,
-                normalize: true);
-            if (mixer == null)
-            {
-                YargLogger.LogError("Failed to create mixer!");
-                return null;
-            }
-
             var stream = new FileStream(_updateMoggPath!, FileMode.Open, FileAccess.Read, FileShare.Read, 1);
-            int version = stream.Read<int>(Endianness.Little);
-            if (version != RBCONEntry.UNENCRYPTED_MOGG)
-            {
-                YargLogger.LogError("Encrypted update moggs are not supported!");
-                stream.Dispose();
-                mixer.Dispose();
-                return null;
-            }
-
-            int start = stream.Read<int>(Endianness.Little);
-            stream.Seek(start, SeekOrigin.Begin);
-
-            if (!IniMoggStemSplitter.AddMoggStems(mixer, stream, in _indices, in _panning, ignoreStems))
-            {
-                stream.Dispose();
-                mixer.Dispose();
-                return null;
-            }
-
-            if (GlobalAudioHandler.LogMixerStatus)
-            {
-                YargLogger.LogFormatInfo("Loaded {0} stems from update mogg", mixer.Channels.Count);
-            }
-            return mixer;
+            bool clampStemVolume = _metadata.Source.ToLowerInvariant() == "yarg";
+            return MoggAudioLoader.BuildMixer(stream, ToString(), speed, volume, clampStemVolume,
+                in _indices, in _panning, ignoreStems);
         }
 
         private StemMixer? LoadLooseAudio(float speed, double volume, SongStem[] ignoreStems)
@@ -227,17 +197,16 @@ namespace YARG.Core.Song
 
         public override YARGImage? LoadAlbumData()
         {
-            if (_updateImagePath != null && File.Exists(_updateImagePath))
+            var subFiles = GetSubFiles();
+
+            // Prefer a raw DXT texture extracted straight from a CON pack over a
+            // re-encoded/converted image, when both are available.
+            var dxtImage = TryLoadDXTAlbumArt(subFiles);
+            if (dxtImage != null)
             {
-                var updateImage = YARGImage.LoadDXT(_updateImagePath);
-                if (updateImage != null)
-                {
-                    return updateImage;
-                }
-                YargLogger.LogFormatError("Update image at {0} failed to load", _updateImagePath);
+                return dxtImage;
             }
 
-            var subFiles = GetSubFiles();
             if (!string.IsNullOrEmpty(_cover) && subFiles.TryGetValue(_cover, out var cover))
             {
                 var image = YARGImage.Load(cover);
@@ -258,6 +227,27 @@ namespace YARG.Core.Song
                         return image;
                     }
                     YargLogger.LogFormatError("Image at {0} failed to load", file);
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Looks for a raw ".png_xbox" or ".png_ps3" texture in the song folder.
+        /// Both formats are self-describing (dimensions/DXT variant live in the
+        /// file's own header), so unlike the mogg case, no sidecar is needed.
+        /// </summary>
+        private static YARGImage? TryLoadDXTAlbumArt(Dictionary<string, string> subFiles)
+        {
+            foreach (var name in subFiles.Keys)
+            {
+                if (name.EndsWith(".png_xbox"))
+                {
+                    return YARGImage.LoadDXT(subFiles[name]);
+                }
+                if (name.EndsWith(".png_ps3"))
+                {
+                    return YARGImage.LoadPS3DXT(subFiles[name]);
                 }
             }
             return null;
