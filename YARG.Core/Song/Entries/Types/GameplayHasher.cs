@@ -28,6 +28,7 @@ namespace YARG.Core.Song
     /// </summary>
     public static class GameplayHasher
     {
+        private const int HASH_VERSION = 26_07_17_00;
         // Every chart is rescaled to this PPQ before hashing, so two files authored
         // at different MIDI resolutions (e.g. 480 vs 960) still match as long as the
         // underlying timing is the same. SongChart.Resolution is read straight from
