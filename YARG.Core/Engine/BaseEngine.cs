@@ -215,7 +215,7 @@ namespace YARG.Core.Engine
 
         public void Update(double time)
         {
-            YargLogger.LogFormatTrace("---- Starting update loop with time {0} ----", time);
+            // YargLogger.LogFormatTrace("---- Starting update loop with time {0} ----", time);
 
             if (!IsBot)
             {
@@ -228,7 +228,7 @@ namespace YARG.Core.Engine
                 YargLogger.LogWarning("Input queue was not fully cleared!");
             }
 
-            YargLogger.LogFormatTrace("Running frame update at {0}", time);
+            // YargLogger.LogFormatTrace("Running frame update at {0}", time);
             RunQueuedUpdates(time);
             RunEngineLoop(time);
         }
@@ -257,8 +257,8 @@ namespace YARG.Core.Engine
                     continue;
                 }
 
-                YargLogger.LogFormatTrace("Processing input {0} ({1}) update at {2}", input.GetAction<GuitarAction>(),
-                    input.Button, input.Time);
+                // YargLogger.LogFormatTrace("Processing input {0} ({1}) update at {2}", input.GetAction<GuitarAction>(),
+                //     input.Button, input.Time);
                 RunQueuedUpdates(input.Time);
 
                 // Update engine state with input.
@@ -343,7 +343,7 @@ namespace YARG.Core.Engine
 
         protected virtual void GenerateQueuedUpdates(double nextTime)
         {
-            YargLogger.LogFormatTrace("Generating queued updates up to {0}", nextTime);
+            // YargLogger.LogFormatTrace("Generating queued updates up to {0}", nextTime);
         }
 
         protected abstract void UpdateTimeVariables(double time);

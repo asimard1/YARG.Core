@@ -135,8 +135,8 @@ namespace YARG.Core.Engine.Guitar.Engines
                 }
             }
 
-            YargLogger.LogFormatTrace("Mutated input state: Button Mask: {0}, HasFretted: {1}, HasStrummed: {2}",
-                EffectiveButtonMask, HasFretted, HasStrummed);
+            // YargLogger.LogFormatTrace("Mutated input state: Button Mask: {0}, HasFretted: {1}, HasStrummed: {2}",
+            //     EffectiveButtonMask, HasFretted, HasStrummed);
         }
 
         protected override void UpdateHitLogic(double time)
@@ -274,8 +274,8 @@ namespace YARG.Core.Engine.Guitar.Engines
                 // Cannot hit the note
                 if (!CanNoteBeHit(note))
                 {
-                    YargLogger.LogFormatTrace("Cant hit note (Index: {0}, Mask {1}) at {2}. Buttons: {3}", i,
-                        note.NoteMask, CurrentTime, EffectiveButtonMask);
+                    // YargLogger.LogFormatTrace("Cant hit note (Index: {0}, Mask {1}) at {2}. Buttons: {3}", i,
+                    //     note.NoteMask, CurrentTime, EffectiveButtonMask);
                     // This does nothing special, it's just logging strum leniency
                     if (isFirstNoteInWindow && HasStrummed && StrumLeniencyTimer.IsActive)
                     {

@@ -614,7 +614,7 @@ namespace YARG.Core.Engine
 
         protected override void UpdateTimeVariables(double time)
         {
-            YargLogger.LogTrace($"REQUIRED LANE NOTE: {RequiredLaneNote}");
+            // YargLogger.LogTrace($"REQUIRED LANE NOTE: {RequiredLaneNote}");
 
             if (time < CurrentTime)
             {
@@ -1233,11 +1233,11 @@ namespace YARG.Core.Engine
                     BaseStats.StarPowerTickAmount -= drain;
                 }
 
-                YargLogger.LogFormatTrace("Drained {0} ticks of SP this update. New SP tick amount: {1}. Current SP Tick: {2}, Last: {3}", drain, BaseStats.StarPowerTickAmount, StarPowerTickPosition, PreviousStarPowerTickPosition);
+                // YargLogger.LogFormatTrace("Drained {0} ticks of SP this update. New SP tick amount: {1}. Current SP Tick: {2}, Last: {3}", drain, BaseStats.StarPowerTickAmount, StarPowerTickPosition, PreviousStarPowerTickPosition);
 
                 double spTimeDelta = CurrentTime - StarPowerActivationTime;
                 BaseStats.TimeInStarPower = spTimeDelta + BaseTimeInStarPower;
-                YargLogger.LogFormatTrace("Updated Star Power Time to {0} (delta: {1}, base: {2})", BaseStats.TimeInStarPower, spTimeDelta, BaseTimeInStarPower);
+                // YargLogger.LogFormatTrace("Updated Star Power Time to {0} (delta: {1}, base: {2})", BaseStats.TimeInStarPower, spTimeDelta, BaseTimeInStarPower);
             }
 
             // Limit amount of ticks to a full bar.
