@@ -273,21 +273,6 @@ namespace YARG.Core.Engine.Guitar
                 }
             }
 
-            if (note.IsSoloStart)
-            {
-                StartSolo();
-            }
-
-            if (IsSoloActive)
-            {
-                Solos[CurrentSoloIndex].NotesHit++;
-            }
-
-            if (note.IsSoloEnd)
-            {
-                EndSolo();
-            }
-
             IncrementCombo();
 
             if (IsRemoteMirror) EngineStats.IncrementNotesHit(note);
@@ -343,29 +328,6 @@ namespace YARG.Core.Engine.Guitar
             if (note.IsStarPower)
             {
                 StripStarPower(note);
-            }
-
-            // Solo has the start and end flag
-            if(note is { IsSoloStart: true, IsSoloEnd: true })
-            {
-                // While a solo is active, end the current solo and immediately start the next.
-                if (IsSoloActive)
-                {
-                    EndSolo();
-                    StartSolo();
-                }
-                else
-                {
-                    // If no solo is currently active, start and immediately end the solo.
-                    StartSolo();
-                    EndSolo();
-                }
-            } else if(note.IsSoloEnd)
-            {
-                EndSolo();
-            } else if (note.IsSoloStart)
-            {
-                StartSolo();
             }
 
             WasNoteGhosted = false;

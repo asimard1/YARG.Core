@@ -146,20 +146,7 @@ namespace YARG.Core.Engine.Vocals
                     EngineStats.StarPowerPhrasesHit++;
                 }
 
-                if (note.IsSoloStart)
-                {
-                    StartSolo();
-                }
-
-                if (IsSoloActive)
-                {
-                    Solos[CurrentSoloIndex].NotesHit++;
-                }
-
-                if (note.IsSoloEnd)
-                {
-                    EndSolo();
-                }
+                HandleSoloNote(note);
 
                 // If there aren't any ticks in the phrase, then don't add
                 // any score or update the multiplier.
@@ -213,14 +200,7 @@ namespace YARG.Core.Engine.Vocals
                 StripStarPower(note);
             }
 
-            if (note.IsSoloEnd)
-            {
-                EndSolo();
-            }
-            if (note.IsSoloStart)
-            {
-                StartSolo();
-            }
+            HandleSoloNote(note);
 
             ResetCombo();
 
