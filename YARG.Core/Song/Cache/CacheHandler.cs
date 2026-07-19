@@ -41,6 +41,7 @@ namespace YARG.Core.Song.Cache
 
         public static SongCache RunScan(bool tryQuickScan, string cacheLocation, string badSongsLocation, bool fullDirectoryPlaylists, List<string> baseDirectories)
         {
+            YargLogger.LogInfo($"[ScanDiag] RunScan start, quick={tryQuickScan}, cache={cacheLocation}");
             using var handler = new CacheHandler(baseDirectories);
 
             // Some ini entry items won't come with the song length defined in the .ini file.
@@ -76,6 +77,8 @@ namespace YARG.Core.Song.Cache
         /// <returns>Whether the scan successfully parsed entries</returns>
         private static bool QuickScan(CacheHandler handler, string cacheLocation, bool fullDirectoryPlaylists)
         {
+            YargLogger.LogInfo($"[ScanDiag] QuickScan start, cache={cacheLocation}");
+            bool readFailed = false;
             try
             {
                 using var cacheFile = LoadCacheToMemory(cacheLocation, fullDirectoryPlaylists);
@@ -88,15 +91,17 @@ namespace YARG.Core.Song.Cache
             }
             catch (Exception ex)
             {
-                YargLogger.LogException(ex, "Error occurred during quick cache file read!");
+                YargLogger.LogError($"{ex} Error occurred during quick cache file read!");
+                readFailed = true;
             }
 
-            if (handler.cache.Entries.Count == 0)
+            if (readFailed || handler.cache.Entries.Count == 0)
             {
+                YargLogger.LogError($"Cache could not be read!");
                 return false;
             }
 
-            YargLogger.LogFormatDebug("Total Entries: {0}", _progress.Count);
+            YargLogger.LogInfo($"Total Entries: {_progress.Count}");
             return true;
         }
 
