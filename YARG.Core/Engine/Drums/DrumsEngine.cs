@@ -89,8 +89,12 @@ namespace YARG.Core.Engine.Drums
             // Cancel overhit if WaitCountdown is active
             if (IsWaitCountdownActive)
             {
-                YargLogger.LogFormatTrace("Overhit prevented during WaitCountdown at time: {0}, tick: {1}",
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Overhit prevented during WaitCountdown at time: {0}, tick: {1}",
                     CurrentTime, CurrentTick);
+}
+
                 return;
             }
 
@@ -109,7 +113,10 @@ namespace YARG.Core.Engine.Drums
             // Prevent overhit too close to a lane that accepts the overhit
             if (IsInLaneLeniencyWindow((int)PadHit))
             {
-                YargLogger.LogFormatTrace("Overhit prevented by lane end leniency at {0}", CurrentTime);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Overhit prevented by lane end leniency at {0}", CurrentTime);
+}
                 return;
             }
 
@@ -148,8 +155,11 @@ namespace YARG.Core.Engine.Drums
         {
             if (note.WasHit || note.WasMissed)
             {
-                YargLogger.LogFormatTrace("Tried to hit/miss note twice (Pad: {0}, Index: {1}, Hit: {2}, Missed: {3})",
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Tried to hit/miss note twice (Pad: {0}, Index: {1}, Hit: {2}, Missed: {3})",
                     note.Pad, NoteIndex, note.WasHit, note.WasMissed);
+}
                 return;
             }
 
@@ -316,14 +326,20 @@ namespace YARG.Core.Engine.Drums
             if (hitNote.IsGhost)
             {
                 awardVelocityBonus = lastInputVelocity < awardThreshold;
-                YargLogger.LogFormatTrace("Ghost note was hit with a velocity of {0} at tick {1}. Bonus awarded: {2}",
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Ghost note was hit with a velocity of {0} at tick {1}. Bonus awarded: {2}",
                     lastInputVelocity, hitNote.Tick, awardVelocityBonus);
+}
             }
             else if (hitNote.IsAccent)
             {
                 awardVelocityBonus = lastInputVelocity > (1 - awardThreshold);
-                YargLogger.LogFormatTrace("Accent note was hit with a velocity of {0} at tick {1}. Bonus awarded: {2}",
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Accent note was hit with a velocity of {0} at tick {1}. Bonus awarded: {2}",
                     lastInputVelocity, hitNote.Tick, awardVelocityBonus);
+}
             }
 
             return awardVelocityBonus;
@@ -333,8 +349,11 @@ namespace YARG.Core.Engine.Drums
         {
             if (note.WasHit || note.WasMissed)
             {
-                YargLogger.LogFormatTrace("Tried to hit/miss note twice (Pad: {0}, Index: {1}, Hit: {2}, Missed: {3})",
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Tried to hit/miss note twice (Pad: {0}, Index: {1}, Hit: {2}, Missed: {3})",
                     note.Pad, NoteIndex, note.WasHit, note.WasMissed);
+}
                 return;
             }
 

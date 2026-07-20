@@ -81,7 +81,10 @@ namespace YARG.Core.Engine.Keys
             {
                 if (IsTimeBetween(ChordStaggerTimer.EndTime, previousTime, nextTime))
                 {
-                    YargLogger.LogFormatTrace("Queuing chord stagger end time at {0}", ChordStaggerTimer.EndTime);
+                    if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Queuing chord stagger end time at {0}", ChordStaggerTimer.EndTime);
+}
                     QueueUpdateTime(ChordStaggerTimer.EndTime, "Chord Stagger End");
                 }
             }
@@ -123,28 +126,40 @@ namespace YARG.Core.Engine.Keys
             // Cancel overstrum if WaitCountdown is active
             if (IsWaitCountdownActive)
             {
-                YargLogger.LogFormatTrace("Overstrum prevented during WaitCountdown at time: {0}, tick: {1}", CurrentTime, CurrentTick);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Overstrum prevented during WaitCountdown at time: {0}, tick: {1}", CurrentTime, CurrentTick);
+}
                 return;
             }
 
             // Prevent overhit if current button satisfies the active lane
             if (IsLaneActive && ActiveLaneIncludesNote(key))
             {
-                YargLogger.LogFormatTrace("Overhit prevented during lane at time: {0}, tick: {1}", CurrentTime, CurrentTick);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Overhit prevented during lane at time: {0}, tick: {1}", CurrentTime, CurrentTick);
+}
                 return;
             }
 
             // Prevent overhit too close to a lane that accepts the overhit
             if (IsInLaneLeniencyWindow(key))
             {
-                YargLogger.LogFormatTrace("Overhit prevented by lane end leniency at {0}", CurrentTime);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Overhit prevented by lane end leniency at {0}", CurrentTime);
+}
                 return;
             }
 
             // Prevent overhit during coda
             if (IsCodaActive)
             {
-                YargLogger.LogFormatTrace("Overhit prevented during coda at time: {0}, tick: {1}", CurrentTime, CurrentTick);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Overhit prevented during coda at time: {0}, tick: {1}", CurrentTime, CurrentTick);
+}
                 return;
             }
 
@@ -155,14 +170,20 @@ namespace YARG.Core.Engine.Keys
                 return;
             }
 
-            YargLogger.LogFormatTrace("Overhit at {0}", CurrentTime);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Overhit at {0}", CurrentTime);
+}
 
             // Break all active sustains
             for (int i = 0; i < ActiveSustains.Count; i++)
             {
                 var sustain = ActiveSustains[i];
                 ActiveSustains.RemoveAt(i);
-                YargLogger.LogFormatTrace("Ended sustain (end time: {0}) at {1}", sustain.GetEndTime(SyncTrack, 0), CurrentTime);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Ended sustain (end time: {0}) at {1}", sustain.GetEndTime(SyncTrack, 0), CurrentTime);
+}
                 i--;
 
                 double finalScore = CalculateSustainPoints(ref sustain, CurrentTick);

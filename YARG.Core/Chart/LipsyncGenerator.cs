@@ -60,12 +60,15 @@ namespace YARG.Core.Chart
 
                     var syllable = GetSyllableForLyric(text);
 
-                    YargLogger.LogFormatTrace("Lyric '{0}' at tick {1} -> Initial: [{2}], Vowel: {3}, VowelEnd: {4}, Final: [{5}]",
+                    if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Lyric '{0}' at tick {1} -> Initial: [{2}], Vowel: {3}, VowelEnd: {4}, Final: [{5}]",
                         (object)text, (object)lyric.Tick,
                         (object)string.Join(", ", syllable.Initial),
                         (object)syllable.VowelMain,
                         (object)(syllable.VowelEnd?.ToString() ?? "none"),
                         (object)string.Join(", ", syllable.Final));
+}
 
                     var endTime = i < phrase.Lyrics.Count - 1
                         ? phrase.Lyrics[i + 1].Time
@@ -122,8 +125,11 @@ namespace YARG.Core.Chart
                     }
 
                     var eventCount = events.Count - eventCountBefore;
-                    YargLogger.LogFormatTrace("  Generated {0} lipsync events for lyric '{1}'",
+                    if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("  Generated {0} lipsync events for lyric '{1}'",
                         (object)eventCount, (object)text);
+}
                 }
             }
 
@@ -263,7 +269,10 @@ namespace YARG.Core.Chart
 
             bool foundVowel = false;
 
-            YargLogger.LogFormatTrace("  Phonemes: [{0}]", string.Join(", ", phonemes));
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("  Phonemes: [{0}]", string.Join(", ", phonemes));
+}
 
             foreach (var phoneme in phonemes)
             {

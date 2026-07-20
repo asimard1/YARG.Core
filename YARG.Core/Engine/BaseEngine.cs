@@ -215,7 +215,10 @@ namespace YARG.Core.Engine
 
         public void Update(double time)
         {
-            // YargLogger.LogFormatTrace("---- Starting update loop with time {0} ----", time);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+                YargLogger.LogFormatTrace("---- Starting update loop with time {0} ----", time);
+            }
 
             if (!IsBot)
             {
@@ -228,7 +231,10 @@ namespace YARG.Core.Engine
                 YargLogger.LogWarning("Input queue was not fully cleared!");
             }
 
-            // YargLogger.LogFormatTrace("Running frame update at {0}", time);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+                YargLogger.LogFormatTrace("Running frame update at {0}", time);
+            }
             RunQueuedUpdates(time);
             RunEngineLoop(time);
         }
@@ -257,8 +263,11 @@ namespace YARG.Core.Engine
                     continue;
                 }
 
-                // YargLogger.LogFormatTrace("Processing input {0} ({1}) update at {2}", input.GetAction<GuitarAction>(),
-                //     input.Button, input.Time);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+                {
+                    YargLogger.LogFormatTrace("Processing input {0} ({1}) update at {2}", input.GetAction<GuitarAction>(),
+                        input.Button, input.Time);
+                }
                 RunQueuedUpdates(input.Time);
 
                 // Update engine state with input.
@@ -287,7 +296,10 @@ namespace YARG.Core.Engine
 
             // if (_scheduledUpdates.Count > 0)
             // {
-            //     YargLogger.LogFormatTrace("{0} updates ready to be simulated", _scheduledUpdates.Count);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+                YargLogger.LogFormatTrace("{0} updates ready to be simulated", _scheduledUpdates.Count);
+            }
             // }
 
             while (_scheduledUpdates.Count > 0)
@@ -313,8 +325,11 @@ namespace YARG.Core.Engine
                     break;
                 }
 
-                // YargLogger.LogFormatTrace("Running scheduled update at {0} ({1})", update.Time,
-                //     item2: update.Reason);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+                {
+                    YargLogger.LogFormatTrace("Running scheduled update at {0} ({1})", update.Time,
+                        item2: update.Reason);
+                }
                 RunEngineLoop(update.Time);
 
                 _scheduledUpdates.RemoveAt(0);
@@ -343,7 +358,10 @@ namespace YARG.Core.Engine
 
         protected virtual void GenerateQueuedUpdates(double nextTime)
         {
-            // YargLogger.LogFormatTrace("Generating queued updates up to {0}", nextTime);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+                YargLogger.LogFormatTrace("Generating queued updates up to {0}", nextTime);
+            }
         }
 
         protected abstract void UpdateTimeVariables(double time);
@@ -689,8 +707,11 @@ namespace YARG.Core.Engine
 
             BaseStats.StarPowerActivationCount++;
 
-            // YargLogger.LogFormatTrace("Activated at SP tick {0}, ends at SP tick {1}. Start time: {2}, End time: {3}",
-                // StarPowerTickActivationPosition, StarPowerTickEndPosition, StarPowerActivationTime, StarPowerEndTime);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+                YargLogger.LogFormatTrace("Activated at SP tick {0}, ends at SP tick {1}. Start time: {2}, End time: {3}",
+                    StarPowerTickActivationPosition, StarPowerTickEndPosition, StarPowerActivationTime, StarPowerEndTime);
+            }
 
             BaseStats.IsStarPowerActive = true;
 
@@ -703,8 +724,11 @@ namespace YARG.Core.Engine
 
         protected void ReleaseStarPower()
         {
-            // YargLogger.LogFormatTrace("Star Power ended at {0} (tick: {1})", CurrentTime,
-            //     StarPowerTickPosition);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+                YargLogger.LogFormatTrace("Star Power ended at {0} (tick: {1})", CurrentTime,
+                    StarPowerTickPosition);
+            }
 
             BaseStats.IsStarPowerActive = false;
 
@@ -735,14 +759,20 @@ namespace YARG.Core.Engine
 
             // Add the amount of ticks gained to the total ticks gained
             BaseStats.TotalStarPowerTicks += ticks;
-            // YargLogger.LogFormatTrace("Earned {0} ticks of SP at SP tick position {1}, current: {2}, new total: {3}", BaseStats.StarPowerTickAmount - prevTicks,
-            //     StarPowerTickPosition, BaseStats.StarPowerTickAmount, BaseStats.TotalStarPowerTicks);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+                YargLogger.LogFormatTrace("Earned {0} ticks of SP at SP tick position {1}, current: {2}, new total: {3}", BaseStats.StarPowerTickAmount - prevTicks,
+                    StarPowerTickPosition, BaseStats.StarPowerTickAmount, BaseStats.TotalStarPowerTicks);
+            }
             BaseStats.TotalStarPowerBarsFilled = (double) BaseStats.TotalStarPowerTicks / TicksPerFullSpBar;
 
             if (BaseStats.IsStarPowerActive)
             {
                 UpdateStarPowerEnds();
-                // YargLogger.LogFormatTrace("New end tick and time: {0}, {1}", StarPowerTickEndPosition, StarPowerEndTime);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+                {
+                    YargLogger.LogFormatTrace("New end tick and time: {0}, {1}", StarPowerTickEndPosition, StarPowerEndTime);
+                }
             }
         }
 
@@ -754,10 +784,13 @@ namespace YARG.Core.Engine
             StarPowerTickEndPosition = StarPowerTickPosition + BaseStats.StarPowerTickAmount;
             StarPowerEndTime = SyncTrack.FindMinTimeForMeasureTick(StarPowerTickEndPosition);
 
-            // YargLogger.LogFormatTrace(
-            //     "Updated Star Power end from {0} ({1}) to {2} ({3})",
-            //     lastEndTime, lastEndTick, StarPowerEndTime, StarPowerTickEndPosition
-            // );
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+                YargLogger.LogFormatTrace(
+                    "Updated Star Power end from {0} ({1}) to {2} ({3})",
+                    lastEndTime, lastEndTick, StarPowerEndTime, StarPowerTickEndPosition
+                );
+            }
         }
 
         protected abstract void UpdateStarPower();

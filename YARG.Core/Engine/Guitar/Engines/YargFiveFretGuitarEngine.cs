@@ -35,7 +35,10 @@ namespace YARG.Core.Engine.Guitar.Engines
             LastButtonMask = EffectiveButtonMask;
             EffectiveButtonMask = (byte) note.NoteMask;
 
-            YargLogger.LogFormatTrace("[Bot] Set button mask to: {0}", EffectiveButtonMask);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("[Bot] Set button mask to: {0}", EffectiveButtonMask);
+}
 
             if (IsCodaActive)
             {
@@ -60,13 +63,19 @@ namespace YARG.Core.Engine.Guitar.Engines
                 {
                     EffectiveButtonMask |= (byte) sustainNote.DisjointMask;
 
-                    YargLogger.LogFormatTrace("[Bot] Added Disjoint Sustain Mask {0} to button mask. {1}", sustainNote.DisjointMask, EffectiveButtonMask);
+                    if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("[Bot] Added Disjoint Sustain Mask {0} to button mask. {1}", sustainNote.DisjointMask, EffectiveButtonMask);
+}
                 }
                 else
                 {
                     EffectiveButtonMask |= (byte) sustainNote.NoteMask;
 
-                    YargLogger.LogFormatTrace("[Bot] Added Sustain Mask {0} to button mask. {1}", sustainNote.NoteMask, EffectiveButtonMask);
+                    if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("[Bot] Added Sustain Mask {0} to button mask. {1}", sustainNote.NoteMask, EffectiveButtonMask);
+}
                 }
             }
         }
@@ -135,8 +144,11 @@ namespace YARG.Core.Engine.Guitar.Engines
                 }
             }
 
-            // YargLogger.LogFormatTrace("Mutated input state: Button Mask: {0}, HasFretted: {1}, HasStrummed: {2}",
-            //     EffectiveButtonMask, HasFretted, HasStrummed);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+                YargLogger.LogFormatTrace("Mutated input state: Button Mask: {0}, HasFretted: {1}, HasStrummed: {2}",
+                    EffectiveButtonMask, HasFretted, HasStrummed);
+            }
         }
 
         protected override void UpdateHitLogic(double time)
@@ -264,8 +276,11 @@ namespace YARG.Core.Engine.Guitar.Engines
 
                         MissNote(note);
 
-                        YargLogger.LogFormatTrace("Missed note (Index: {0}, Mask: {1}) at {2}", i,
-                            note.NoteMask, CurrentTime);
+                        if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+                        {
+                            YargLogger.LogFormatTrace("Missed note (Index: {0}, Mask: {1}) at {2}", i,
+                                note.NoteMask, CurrentTime);
+                        }
                     }
 
                     break;
@@ -274,13 +289,16 @@ namespace YARG.Core.Engine.Guitar.Engines
                 // Cannot hit the note
                 if (!CanNoteBeHit(note))
                 {
-                    // YargLogger.LogFormatTrace("Cant hit note (Index: {0}, Mask {1}) at {2}. Buttons: {3}", i,
-                    //     note.NoteMask, CurrentTime, EffectiveButtonMask);
-                    // This does nothing special, it's just logging strum leniency
-                    if (isFirstNoteInWindow && HasStrummed && StrumLeniencyTimer.IsActive)
+                    if (YargLogger.IsLevelEnabled(LogLevel.Trace))
                     {
-                        YargLogger.LogFormatTrace("Starting strum leniency at {0}, will end at {1}", CurrentTime,
-                            StrumLeniencyTimer.EndTime);
+                        YargLogger.LogFormatTrace("Cant hit note (Index: {0}, Mask {1}) at {2}. Buttons: {3}", i,
+                            note.NoteMask, CurrentTime, EffectiveButtonMask);
+                        // This does nothing special, it's just logging strum leniency
+                        if (isFirstNoteInWindow && HasStrummed && StrumLeniencyTimer.IsActive)
+                        {
+                            YargLogger.LogFormatTrace("Starting strum leniency at {0}, will end at {1}", CurrentTime,
+                                StrumLeniencyTimer.EndTime);
+                        }
                     }
 
                     // Note skipping not allowed on the first note if hopo/tap
@@ -315,8 +333,11 @@ namespace YARG.Core.Engine.Guitar.Engines
                 if (HasTapped && (hopoCondition || tapCondition) && canUseInfFrontEnd && !WasNoteGhosted)
                 {
                     HitNote(note);
-                    YargLogger.LogFormatTrace("Hit note (Index: {0}, Mask: {1}) at {2} with hopo rules",
-                        i, note.NoteMask, CurrentTime);
+                    if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+                    {
+                        YargLogger.LogFormatTrace("Hit note (Index: {0}, Mask: {1}) at {2} with hopo rules",
+                            i, note.NoteMask, CurrentTime);
+                    }
                     break;
                 }
 
@@ -325,15 +346,18 @@ namespace YARG.Core.Engine.Guitar.Engines
                     (isFirstNoteInWindow || (NoteIndex > 0 && EngineStats.Combo == 0)))
                 {
                     HitNote(note);
-                    if (HasStrummed)
+                    if (YargLogger.IsLevelEnabled(LogLevel.Trace))
                     {
-                        YargLogger.LogFormatTrace("Hit note (Index: {0}, Mask: {1}) at {2} with strum input",
-                            i, note.NoteMask, CurrentTime);
-                    }
-                    else
-                    {
-                        YargLogger.LogFormatTrace("Hit note (Index: {0}, Mask: {1}) at {2} with strum leniency",
-                            i, note.NoteMask, CurrentTime);
+                        if (HasStrummed)
+                        {
+                            YargLogger.LogFormatTrace("Hit note (Index: {0}, Mask: {1}) at {2} with strum input",
+                                i, note.NoteMask, CurrentTime);
+                        }
+                        else
+                        {
+                            YargLogger.LogFormatTrace("Hit note (Index: {0}, Mask: {1}) at {2} with strum leniency",
+                                i, note.NoteMask, CurrentTime);
+                        }
                     }
 
                     break;

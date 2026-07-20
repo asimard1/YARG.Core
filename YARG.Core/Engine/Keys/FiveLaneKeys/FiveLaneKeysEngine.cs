@@ -45,8 +45,12 @@ namespace YARG.Core.Engine.Keys
         {
             if (note.WasHit || note.WasMissed)
             {
-                YargLogger.LogFormatTrace("Tried to hit/miss note twice (Key: {0}, Index: {1}, Hit: {2}, Missed: {3})",
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Tried to hit/miss note twice (Key: {0}, Index: {1}, Hit: {2}, Missed: {3})",
                     note.FiveLaneKeysAction, NoteIndex, note.WasHit, note.WasMissed);
+}
+
                 return;
             }
 
@@ -126,8 +130,11 @@ namespace YARG.Core.Engine.Keys
         {
             if (note.WasHit || note.WasMissed)
             {
-                YargLogger.LogFormatTrace("Tried to hit/miss note twice (Key: {0}, Index: {1}, Hit: {2}, Missed: {3})",
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+{
+    YargLogger.LogFormatTrace("Tried to hit/miss note twice (Key: {0}, Index: {1}, Hit: {2}, Missed: {3})",
                     note.FiveLaneKeysAction, NoteIndex, note.WasHit, note.WasMissed);
+}
                 return;
             }
 

@@ -233,18 +233,21 @@ namespace YARG.Core.Engine.Prediction
             string kind = explicitWasHit ? "Hit" : "Miss";
             if (earliestRollbackIndex < 0)
             {
-                // YargLogger.LogFormatTrace(
-                //     "Prediction[sim-recv] Note{0} (matches prediction): noteIndex={1} fillRange=[{2},{3}] engineTime={4:0.000}",
-                //     kind, noteIndex, fillStart, noteIndex - 1, remoteEngineTime);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+                {
+                    YargLogger.LogFormatTrace(
+                        "Prediction[sim-recv] Note{0} (matches prediction): noteIndex={1} fillRange=[{2},{3}] engineTime={4:0.000}",
+                        kind, noteIndex, fillStart, noteIndex - 1, remoteEngineTime);
+                }
                 return true;
             }
 
             double rollbackTime = (earliestRollbackIndex >= 0 && earliestRollbackIndex < _notes.Count)
                 ? _notes[earliestRollbackIndex].Time
                 : (!double.IsNaN(explicitNoteTime) ? explicitNoteTime : remoteEngineTime);
-            YargLogger.LogFormatInfo(
-                "Prediction[sim-recv] Note{0} (rollback at noteIndex={1}, earliest mis-decided={2}): rollbackTime={3:0.000} engineCurrent={4:0.000}",
-                kind, noteIndex, earliestRollbackIndex, rollbackTime, _engine.CurrentTime);
+            // YargLogger.LogFormatInfo(
+            //     "Prediction[sim-recv] Note{0} (rollback at noteIndex={1}, earliest mis-decided={2}): rollbackTime={3:0.000} engineCurrent={4:0.000}",
+            //     kind, noteIndex, earliestRollbackIndex, rollbackTime, _engine.CurrentTime);
 
             return RollbackAndReplay(rollbackTime, explicitWasHit ? "hit" : "miss", injectedEvent: null);
         }
@@ -253,24 +256,30 @@ namespace YARG.Core.Engine.Prediction
         {
             if (!_confirmedReleased.Add(sustainNoteIndex))
             {
-                // YargLogger.LogFormatTrace(
-                //     "Prediction[sim-recv] SustainReleased (duplicate): noteIndex={0}",
-                //     sustainNoteIndex);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+                {
+                YargLogger.LogFormatTrace(
+                    "Prediction[sim-recv] SustainReleased (duplicate): noteIndex={0}",
+                    sustainNoteIndex);
+                }
                 return true;
             }
 
             if (releaseSongTime > _engine.CurrentTime)
             {
                 _pendingReleases[releaseSongTime] = sustainNoteIndex;
-                // YargLogger.LogFormatTrace(
-                //     "Prediction[sim-recv] SustainReleased (queued): noteIndex={0} releaseTime={1:0.000} engineCurrent={2:0.000}",
-                //     sustainNoteIndex, releaseSongTime, _engine.CurrentTime);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+                {
+                    YargLogger.LogFormatTrace(
+                        "Prediction[sim-recv] SustainReleased (queued): noteIndex={0} releaseTime={1:0.000} engineCurrent={2:0.000}",
+                        sustainNoteIndex, releaseSongTime, _engine.CurrentTime);
+                }
                 return true;
             }
 
-            YargLogger.LogFormatInfo(
-                "Prediction[sim-recv] SustainReleased (LATE, rollback): noteIndex={0} releaseTime={1:0.000} engineCurrent={2:0.000}",
-                sustainNoteIndex, releaseSongTime, _engine.CurrentTime);
+            // YargLogger.LogFormatInfo(
+            //     "Prediction[sim-recv] SustainReleased (LATE, rollback): noteIndex={0} releaseTime={1:0.000} engineCurrent={2:0.000}",
+            //     sustainNoteIndex, releaseSongTime, _engine.CurrentTime);
 
             return RollbackAndReplay(
                 releaseSongTime,
@@ -286,18 +295,24 @@ namespace YARG.Core.Engine.Prediction
             double key = Math.Round(songTime * 1000.0) / 1000.0;
             if (!_confirmedSpActivations.Add(key))
             {
-                // YargLogger.LogFormatTrace(
-                //     "Prediction[sim-recv] StarPowerActivated (duplicate): songTime={0:0.000}",
-                //     songTime);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+                {
+                    YargLogger.LogFormatTrace(
+                        "Prediction[sim-recv] StarPowerActivated (duplicate): songTime={0:0.000}",
+                        songTime);
+                }
                 return true;
             }
 
             if (songTime > _engine.CurrentTime)
             {
                 _pendingSpActivations[songTime] = 0;
-                // YargLogger.LogFormatTrace(
-                //     "Prediction[sim-recv] StarPowerActivated (queued): songTime={0:0.000} engineCurrent={1:0.000}",
-                //     songTime, _engine.CurrentTime);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+                {
+                    YargLogger.LogFormatTrace(
+                        "Prediction[sim-recv] StarPowerActivated (queued): songTime={0:0.000} engineCurrent={1:0.000}",
+                        songTime, _engine.CurrentTime);
+                }
                 return true;
             }
 
@@ -319,9 +334,12 @@ namespace YARG.Core.Engine.Prediction
             if (songTime > _engine.CurrentTime)
             {
                 _pendingOverstrums[songTime] = 0;
-                // YargLogger.LogFormatTrace(
-                //     "Prediction[sim-recv] Overstrum (queued): songTime={0:0.000} engineCurrent={1:0.000}",
-                //     songTime, _engine.CurrentTime);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+                {
+                    YargLogger.LogFormatTrace(
+                        "Prediction[sim-recv] Overstrum (queued): songTime={0:0.000} engineCurrent={1:0.000}",
+                        songTime, _engine.CurrentTime);
+                }
                 return true;
             }
 
@@ -343,9 +361,12 @@ namespace YARG.Core.Engine.Prediction
             if (songTime > _engine.CurrentTime)
             {
                 _pendingWhammy[songTime] = value;
-                // YargLogger.LogFormatTrace(
-                //     "Prediction[sim-recv] Whammy (queued): songTime={0:0.000} value={1:0.00}",
-                //     songTime, value);
+                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+                {
+                    YargLogger.LogFormatTrace(
+                        "Prediction[sim-recv] Whammy (queued): songTime={0:0.000} value={1:0.00}",
+                        songTime, value);
+                }
                 return;
             }
 
@@ -355,9 +376,12 @@ namespace YARG.Core.Engine.Prediction
             // whammy packet.
             LatestWhammyValue = value > 0.01f ? value : 0f;
 
-            // YargLogger.LogFormatTrace(
-            //     "Prediction[sim-recv] Whammy (LATE): songTime={0:0.000} value={1:0.00} engineCurrent={2:0.000}",
-            //     songTime, value, _engine.CurrentTime);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+                YargLogger.LogFormatTrace(
+                    "Prediction[sim-recv] Whammy (LATE): songTime={0:0.000} value={1:0.00} engineCurrent={2:0.000}",
+                    songTime, value, _engine.CurrentTime);
+            }
         }
 
         // Two-sample ring (previous + latest) for vocal pitch lerp.
@@ -514,10 +538,13 @@ namespace YARG.Core.Engine.Prediction
             }
             _pendingDecisions.Clear();
 
-            // YargLogger.LogFormatTrace(
-            //     "Prediction[sim-snapshot] applied: snapTime={0:0.000} engineWas={1:0.000} engineNow={2:0.000} scoreWas={3} scoreNow={4} replayedEvents={5} reEmittedDecisions={6}",
-            //     snapshotSongTime, engineBefore, _engine.CurrentTime,
-            //     scoreBefore, _engine.BaseStats.TotalScore, postEvents.Count, replayedDecisions);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+                YargLogger.LogFormatTrace(
+                    "Prediction[sim-snapshot] applied: snapTime={0:0.000} engineWas={1:0.000} engineNow={2:0.000} scoreWas={3} scoreNow={4} replayedEvents={5} reEmittedDecisions={6}",
+                    snapshotSongTime, engineBefore, _engine.CurrentTime,
+                    scoreBefore, _engine.BaseStats.TotalScore, postEvents.Count, replayedDecisions);
+            }
 
             // Future-stamped snapshot probe: if the snapshot's CurrentTime is ahead of
             // the receiver's most recent localSongTime, sim.Update will short-circuit
@@ -619,10 +646,13 @@ namespace YARG.Core.Engine.Prediction
 
             _rollback.RecordDecision(decision.NoteHitTime, kind, decision.NoteIndex);
 
-            // YargLogger.LogFormatTrace(
-            //     "Prediction[sim-commit] {0}: noteIndex={1} noteTime={2:0.000} engineCurrent={3:0.000} combo={4} mult={5}x score={6}",
-            //     kind, decision.NoteIndex, decision.NoteHitTime, _engine.CurrentTime,
-            //     _engine.BaseStats.Combo, _engine.BaseStats.ScoreMultiplier, _engine.BaseStats.TotalScore);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+            YargLogger.LogFormatTrace(
+                "Prediction[sim-commit] {0}: noteIndex={1} noteTime={2:0.000} engineCurrent={3:0.000} combo={4} mult={5}x score={6}",
+                kind, decision.NoteIndex, decision.NoteHitTime, _engine.CurrentTime,
+                _engine.BaseStats.Combo, _engine.BaseStats.ScoreMultiplier, _engine.BaseStats.TotalScore);
+            }
         }
 
         private void ApplySustainRelease(int sustainNoteIndex, double releaseTime)
@@ -638,9 +668,12 @@ namespace YARG.Core.Engine.Prediction
                 releaseTime,
                 EngineRollbackBuffer.DecisionKind.SustainReleased,
                 sustainNoteIndex);
-            // YargLogger.LogFormatTrace(
-            //     "Prediction[sim-commit] SustainReleased: noteIndex={0} releaseTime={1:0.000} score={2}",
-            //     sustainNoteIndex, releaseTime, _engine.BaseStats.TotalScore);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+            YargLogger.LogFormatTrace(
+                "Prediction[sim-commit] SustainReleased: noteIndex={0} releaseTime={1:0.000} score={2}",
+                sustainNoteIndex, releaseTime, _engine.BaseStats.TotalScore);
+            }
         }
 
         private void ApplyStarPowerActivation(double songTime)
@@ -656,9 +689,12 @@ namespace YARG.Core.Engine.Prediction
                 songTime,
                 EngineRollbackBuffer.DecisionKind.StarPowerActivated,
                 0);
-            // YargLogger.LogFormatTrace(
-            //     "Prediction[sim-commit] StarPowerActivated: songTime={0:0.000} spActive={1}",
-            //     songTime, _engine.BaseStats.IsStarPowerActive);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+                YargLogger.LogFormatTrace(
+                    "Prediction[sim-commit] StarPowerActivated: songTime={0:0.000} spActive={1}",
+                    songTime, _engine.BaseStats.IsStarPowerActive);
+            }
         }
 
         private void ApplyOverstrum(double songTime)
@@ -671,9 +707,12 @@ namespace YARG.Core.Engine.Prediction
             _engine.ForceOverstrum(songTime);
             _rollback.RecordDecision(
                 songTime, EngineRollbackBuffer.DecisionKind.Overstrum, 0);
-            // YargLogger.LogFormatTrace(
-            //     "Prediction[sim-commit] Overstrum: songTime={0:0.000} score={1} combo={2}",
-            //     songTime, _engine.BaseStats.TotalScore, _engine.BaseStats.Combo);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+                YargLogger.LogFormatTrace(
+                    "Prediction[sim-commit] Overstrum: songTime={0:0.000} score={1} combo={2}",
+                    songTime, _engine.BaseStats.TotalScore, _engine.BaseStats.Combo);
+            }
         }
 
         private void ApplyWhammy(double songTime, float value)
@@ -692,9 +731,12 @@ namespace YARG.Core.Engine.Prediction
             // Polled per-frame by the per-instrument player.
             LatestWhammyValue = value > 0.01f ? value : 0f;
 
-            // YargLogger.LogFormatTrace(
-            //     "Prediction[sim-commit] Whammy: songTime={0:0.000} value={1:0.00}",
-            //     songTime, value);
+            if (YargLogger.IsLevelEnabled(LogLevel.Trace))
+            {
+            YargLogger.LogFormatTrace(
+                "Prediction[sim-commit] Whammy: songTime={0:0.000} value={1:0.00}",
+                songTime, value);
+            }
         }
 
         // Used after a wire snapshot anchors state; earlier events are baked into it.
