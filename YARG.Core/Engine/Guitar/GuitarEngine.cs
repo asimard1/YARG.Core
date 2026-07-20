@@ -71,7 +71,7 @@ namespace YARG.Core.Engine.Guitar
             {
                 if (IsTimeBetween(HopoLeniencyTimer.EndTime, previousTime, nextTime))
                 {
-                    YargLogger.LogFormatTrace("Queuing hopo leniency end time at {0}", HopoLeniencyTimer.EndTime);
+                    // YargLogger.LogFormatTrace("Queuing hopo leniency end time at {0}", HopoLeniencyTimer.EndTime);
                     QueueUpdateTime(HopoLeniencyTimer.EndTime, "HOPO Leniency End");
                 }
             }
@@ -80,8 +80,8 @@ namespace YARG.Core.Engine.Guitar
             {
                 if (IsTimeBetween(StrumLeniencyTimer.EndTime, previousTime, nextTime))
                 {
-                    YargLogger.LogFormatTrace("Queuing strum leniency end time at {0}",
-                        StrumLeniencyTimer.EndTime);
+                    // YargLogger.LogFormatTrace("Queuing strum leniency end time at {0}",
+                    //     StrumLeniencyTimer.EndTime);
                     QueueUpdateTime(StrumLeniencyTimer.EndTime, "Strum Leniency End");
                 }
             }

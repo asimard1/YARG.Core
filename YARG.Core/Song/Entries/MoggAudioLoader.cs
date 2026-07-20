@@ -107,7 +107,7 @@ namespace YARG.Core.Song
 
             if (mixer.Channels.Count == 0)
             {
-                YargLogger.LogError("Failed to add any stems!");
+                YargLogger.LogError("Failed to add any stems! ({0})", mixerName);
                 stream.Dispose();
                 mixer.Dispose();
                 return null;
@@ -138,7 +138,7 @@ namespace YARG.Core.Song
                     return false;
                 }
 
-                string name = YARGDTAReader.GetNameOfNode(ref container, false);
+                string name = YARGDTAReader.GetNameOfNode(ref container, true);
                 var dta = DTAEntry.Create(name, container);
                 YARGDTAReader.EndNode(ref container);
 

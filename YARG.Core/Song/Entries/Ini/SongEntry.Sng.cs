@@ -244,7 +244,7 @@ namespace YARG.Core.Song
 
             if (mixer.Channels.Count == 0)
             {
-                YargLogger.LogError("Failed to add any stems!");
+                YargLogger.LogFormatError("Failed to add any stems! ({0})", ToString());
                 mixer.Dispose();
                 return null;
             }

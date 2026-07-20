@@ -134,7 +134,7 @@ namespace YARG.Core.Song
 
             if (mixer.Channels.Count == 0)
             {
-                YargLogger.LogError("Failed to add any stems!");
+                YargLogger.LogFormatError("Failed to add any stems! ({0})", ToString());
                 mixer.Dispose();
                 return null;
             }
@@ -205,6 +205,18 @@ namespace YARG.Core.Song
             if (dxtImage != null)
             {
                 return dxtImage;
+            }
+
+            // Same raw DXT format as above, just sourced from songs_updates instead
+            // of the song's own folder - covers songs whose art only ships as an update.
+            if (_updateImagePath != null && File.Exists(_updateImagePath))
+            {
+                var updateImage = YARGImage.LoadDXT(_updateImagePath);
+                if (updateImage != null)
+                {
+                    return updateImage;
+                }
+                YargLogger.LogFormatError("Update image at {0} failed to load", _updateImagePath);
             }
 
             if (!string.IsNullOrEmpty(_cover) && subFiles.TryGetValue(_cover, out var cover))

@@ -240,8 +240,8 @@ namespace YARG.Core.Engine
                 // Stop here if the inputs are in the future
                 if (input.Time > time)
                 {
-                    YargLogger.LogFormatWarning(
-                        "Queued input is in the future! Time being updated to: {0}, input time: {1}", time, input.Time);
+                    // YargLogger.LogFormatWarning(
+                    //     "Queued input is in the future! Time being updated to: {0}, input time: {1}", time, input.Time);
                     break;
                 }
 
@@ -285,10 +285,10 @@ namespace YARG.Core.Engine
         {
             GenerateAndSortQueuedUpdates(time);
 
-            if (_scheduledUpdates.Count > 0)
-            {
-                YargLogger.LogFormatTrace("{0} updates ready to be simulated", _scheduledUpdates.Count);
-            }
+            // if (_scheduledUpdates.Count > 0)
+            // {
+            //     YargLogger.LogFormatTrace("{0} updates ready to be simulated", _scheduledUpdates.Count);
+            // }
 
             while (_scheduledUpdates.Count > 0)
             {
@@ -313,8 +313,8 @@ namespace YARG.Core.Engine
                     break;
                 }
 
-                YargLogger.LogFormatTrace("Running scheduled update at {0} ({1})", update.Time,
-                    item2: update.Reason);
+                // YargLogger.LogFormatTrace("Running scheduled update at {0} ({1})", update.Time,
+                //     item2: update.Reason);
                 RunEngineLoop(update.Time);
 
                 _scheduledUpdates.RemoveAt(0);
@@ -362,9 +362,9 @@ namespace YARG.Core.Engine
             // In the case that the queue is not in order...
             if (input.Time < LastQueuedInputTime)
             {
-                YargLogger.LogFormatWarning(
-                    "Engine was forced to move an input time! Previous queued input: {0}, input being queued: {1}",
-                    LastQueuedInputTime, input.Time);
+                // YargLogger.LogFormatWarning(
+                //     "Engine was forced to move an input time! Previous queued input: {0}, input being queued: {1}",
+                //     LastQueuedInputTime, input.Time);
 
                 input = new GameInput(LastQueuedInputTime, input.Action, input.Integer);
             }
@@ -372,9 +372,9 @@ namespace YARG.Core.Engine
             // In the case that the input is before the current time...
             if (input.Time < CurrentTime)
             {
-                YargLogger.LogFormatWarning(
-                    "Engine was forced to move an input time! Current time: {0}, input being queued: {1}",
-                    CurrentTime, input.Time);
+                // YargLogger.LogFormatWarning(
+                //     "Engine was forced to move an input time! Current time: {0}, input being queued: {1}",
+                //     CurrentTime, input.Time);
 
                 input = new GameInput(CurrentTime, input.Action, input.Integer);
             }
@@ -689,8 +689,8 @@ namespace YARG.Core.Engine
 
             BaseStats.StarPowerActivationCount++;
 
-            YargLogger.LogFormatTrace("Activated at SP tick {0}, ends at SP tick {1}. Start time: {2}, End time: {3}",
-                StarPowerTickActivationPosition, StarPowerTickEndPosition, StarPowerActivationTime, StarPowerEndTime);
+            // YargLogger.LogFormatTrace("Activated at SP tick {0}, ends at SP tick {1}. Start time: {2}, End time: {3}",
+                // StarPowerTickActivationPosition, StarPowerTickEndPosition, StarPowerActivationTime, StarPowerEndTime);
 
             BaseStats.IsStarPowerActive = true;
 
@@ -703,8 +703,8 @@ namespace YARG.Core.Engine
 
         protected void ReleaseStarPower()
         {
-            YargLogger.LogFormatTrace("Star Power ended at {0} (tick: {1})", CurrentTime,
-                StarPowerTickPosition);
+            // YargLogger.LogFormatTrace("Star Power ended at {0} (tick: {1})", CurrentTime,
+            //     StarPowerTickPosition);
 
             BaseStats.IsStarPowerActive = false;
 
@@ -735,14 +735,14 @@ namespace YARG.Core.Engine
 
             // Add the amount of ticks gained to the total ticks gained
             BaseStats.TotalStarPowerTicks += ticks;
-            YargLogger.LogFormatTrace("Earned {0} ticks of SP at SP tick position {1}, current: {2}, new total: {3}", BaseStats.StarPowerTickAmount - prevTicks,
-                StarPowerTickPosition, BaseStats.StarPowerTickAmount, BaseStats.TotalStarPowerTicks);
+            // YargLogger.LogFormatTrace("Earned {0} ticks of SP at SP tick position {1}, current: {2}, new total: {3}", BaseStats.StarPowerTickAmount - prevTicks,
+            //     StarPowerTickPosition, BaseStats.StarPowerTickAmount, BaseStats.TotalStarPowerTicks);
             BaseStats.TotalStarPowerBarsFilled = (double) BaseStats.TotalStarPowerTicks / TicksPerFullSpBar;
 
             if (BaseStats.IsStarPowerActive)
             {
                 UpdateStarPowerEnds();
-                YargLogger.LogFormatTrace("New end tick and time: {0}, {1}", StarPowerTickEndPosition, StarPowerEndTime);
+                // YargLogger.LogFormatTrace("New end tick and time: {0}, {1}", StarPowerTickEndPosition, StarPowerEndTime);
             }
         }
 
@@ -754,10 +754,10 @@ namespace YARG.Core.Engine
             StarPowerTickEndPosition = StarPowerTickPosition + BaseStats.StarPowerTickAmount;
             StarPowerEndTime = SyncTrack.FindMinTimeForMeasureTick(StarPowerTickEndPosition);
 
-            YargLogger.LogFormatTrace(
-                "Updated Star Power end from {0} ({1}) to {2} ({3})",
-                lastEndTime, lastEndTick, StarPowerEndTime, StarPowerTickEndPosition
-            );
+            // YargLogger.LogFormatTrace(
+            //     "Updated Star Power end from {0} ({1}) to {2} ({3})",
+            //     lastEndTime, lastEndTick, StarPowerEndTime, StarPowerTickEndPosition
+            // );
         }
 
         protected abstract void UpdateStarPower();

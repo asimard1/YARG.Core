@@ -402,16 +402,16 @@ namespace YARG.Core.Engine
 
                 if (sustain.IsLeniencyHeld && IsTimeBetween(leniencyDropTime, previousTime, nextTime))
                 {
-                    YargLogger.LogFormatTrace("Queuing sustain (tick: {0}) leniency drop time at {1}", sustain.Note.Tick,
-                        leniencyDropTime);
+                    // YargLogger.LogFormatTrace("Queuing sustain (tick: {0}) leniency drop time at {1}", sustain.Note.Tick,
+                        // leniencyDropTime);
                     QueueUpdateTime(leniencyDropTime, "Sustain Leniency Drop");
                 }
 
                 // Burst time is for scoring, so that scoring finishes at the correct time
                 if (IsTimeBetween(burstTime, previousTime, nextTime))
                 {
-                    YargLogger.LogFormatTrace("Queuing sustain (tick: {0}) burst time at {1}", sustain.Note.Tick,
-                        burstTime);
+                    // YargLogger.LogFormatTrace("Queuing sustain (tick: {0}) burst time at {1}", sustain.Note.Tick,
+                        // burstTime);
                     QueueUpdateTime(burstTime, "Sustain Burst");
                 }
 
@@ -419,8 +419,8 @@ namespace YARG.Core.Engine
                 // also be handled.
                 if (IsTimeBetween(endTime, previousTime, nextTime))
                 {
-                    YargLogger.LogFormatTrace("Queuing sustain (tick: {0}) end time at {1}", sustain.Note.Tick,
-                        endTime);
+                    // YargLogger.LogFormatTrace("Queuing sustain (tick: {0}) end time at {1}", sustain.Note.Tick,
+                        // endTime);
                     QueueUpdateTime(endTime, "Sustain End");
                 }
             }
@@ -446,7 +446,7 @@ namespace YARG.Core.Engine
                     // Earliest the note can be hit
                     if (IsTimeBetween(noteFrontEnd, previousTime, nextTime))
                     {
-                        YargLogger.LogFormatTrace("Queuing note {0} front end hit time at {1}", i, noteFrontEnd);
+                        // YargLogger.LogFormatTrace("Queuing note {0} front end hit time at {1}", i, noteFrontEnd);
                         QueueUpdateTime(noteFrontEnd, "Note Front End");
                     }
                 }
@@ -454,8 +454,8 @@ namespace YARG.Core.Engine
                 {
                     if (IsTimeBetween(note.Time, previousTime, nextTime))
                     {
-                        YargLogger.LogFormatTrace("Queuing bot note {0} at {1}", i, note.Time);
-                        QueueUpdateTime(note.Time, "Bot Note Time");
+                        // YargLogger.LogFormatTrace("Queuing bot note {0} at {1}", i, note.Time);
+                        // QueueUpdateTime(note.Time, "Bot Note Time");
                     }
                 }
 
@@ -466,7 +466,7 @@ namespace YARG.Core.Engine
 
                 if (IsTimeBetween(noteBackEndIncrement, previousTime, nextTime))
                 {
-                    YargLogger.LogFormatTrace("Queuing note {0} back end miss time at {1}", i, noteBackEndIncrement);
+                    // YargLogger.LogFormatTrace("Queuing note {0} back end miss time at {1}", i, noteBackEndIncrement);
                     QueueUpdateTime(noteBackEndIncrement, "Note Back End");
                 }
             }
@@ -475,8 +475,8 @@ namespace YARG.Core.Engine
             {
                 if (IsTimeBetween(StarPowerWhammyTimer.EndTime, previousTime, nextTime))
                 {
-                    YargLogger.LogFormatTrace("Queuing star power whammy end time at {0}",
-                        StarPowerWhammyTimer.EndTime);
+                    // YargLogger.LogFormatTrace("Queuing star power whammy end time at {0}",
+                    //     StarPowerWhammyTimer.EndTime);
                     QueueUpdateTime(StarPowerWhammyTimer.EndTime, "Star Power Whammy End");
                 }
 
@@ -521,8 +521,8 @@ namespace YARG.Core.Engine
 
                         if (IsTimeBetween(timeOfHalfBar, previousTime, nextTime))
                         {
-                            YargLogger.LogFormatTrace("Queuing star power half bar time at {0}",
-                                timeOfHalfBar);
+                            // YargLogger.LogFormatTrace("Queuing star power half bar time at {0}",
+                                // timeOfHalfBar);
                             QueueUpdateTime(timeOfHalfBar, "Star Power Half Bar");
                         }
                     }
@@ -530,7 +530,7 @@ namespace YARG.Core.Engine
                     // If the ticks exceed a full bar, they are capped and this needs to be synchronised
                     if (lastSpTickAmount < TicksPerFullSpBar && spTickAmount >= TicksPerFullSpBar)
                     {
-                        YargLogger.LogFormatTrace("Simulated SP gain/drain and found a full SP bar at {0}", maxWhammyTime);
+                        // YargLogger.LogFormatTrace("Simulated SP gain/drain and found a full SP bar at {0}", maxWhammyTime);
                         QueueUpdateTime(maxWhammyTime, "SP Bar Cap Time");
                     }
                 }
@@ -540,7 +540,7 @@ namespace YARG.Core.Engine
             {
                 if (IsTimeBetween(StarPowerEndTime, previousTime, nextTime))
                 {
-                    YargLogger.LogFormatTrace("Queuing Star Power End Time at {0}", StarPowerEndTime);
+                    // YargLogger.LogFormatTrace("Queuing Star Power End Time at {0}", StarPowerEndTime);
                     QueueUpdateTime(StarPowerEndTime, "SP End Time");
                 }
             }
@@ -556,8 +556,8 @@ namespace YARG.Core.Engine
 
                     if (IsTimeBetween(endTime, previousTime, nextTime))
                     {
-                        YargLogger.LogFormatTrace("Queuing countdown {0} deactivation at {1}",
-                            CurrentWaitCountdownIndex, endTime);
+                        // YargLogger.LogFormatTrace("Queuing countdown {0} deactivation at {1}",
+                        //     CurrentWaitCountdownIndex, endTime);
                         QueueUpdateTime(endTime, "Deactivate Countdown");
                     }
                 }
@@ -584,8 +584,8 @@ namespace YARG.Core.Engine
 
                         if (IsTimeBetween(nextCountdownStartTime, previousTime, nextTime))
                         {
-                            YargLogger.LogFormatTrace("Queuing countdown {0} start time at {1}", nextCountdownIndex,
-                                nextCountdownStartTime);
+                            // YargLogger.LogFormatTrace("Queuing countdown {0} start time at {1}", nextCountdownIndex,
+                            //     nextCountdownStartTime);
                             QueueUpdateTime(nextCountdownStartTime, "Activate Countdown");
                         }
                     }
@@ -633,12 +633,12 @@ namespace YARG.Core.Engine
             {
                 if (time >= Codas[CurrentCodaIndex].StartTime && !CodaHasStarted && !InhibitCoda)
                 {
-                    YargLogger.LogFormatTrace("Coda {0} activated at time {1}", CurrentCodaIndex, time);
+                    // YargLogger.LogFormatTrace("Coda {0} activated at time {1}", CurrentCodaIndex, time);
                     StartCoda();
                 }
                 else if (time > Codas[CurrentCodaIndex].EndTime && IsCodaActive)
                 {
-                    YargLogger.LogFormatTrace("Coda {0} deactivated at time {1}", CurrentCodaIndex, time);
+                    // YargLogger.LogFormatTrace("Coda {0} deactivated at time {1}", CurrentCodaIndex, time);
                     IsCodaActive = false;
                 }
             }
@@ -657,7 +657,7 @@ namespace YARG.Core.Engine
                         {
                             // Entered new countdown window
                             IsWaitCountdownActive = true;
-                            YargLogger.LogFormatTrace("Countdown {0} activated at time {1}. Expected time: {2}", CurrentWaitCountdownIndex, time, currentCountdown.Time);
+                            // YargLogger.LogFormatTrace("Countdown {0} activated at time {1}. Expected time: {2}", CurrentWaitCountdownIndex, time, currentCountdown.Time);
                         }
 
                         UpdateCountdown(currentCountdown.TimeLength, currentCountdown.TimeEnd);
@@ -667,7 +667,7 @@ namespace YARG.Core.Engine
                         if (IsWaitCountdownActive)
                         {
                             IsWaitCountdownActive = false;
-                            YargLogger.LogFormatTrace("Countdown {0} deactivated at time {1}. Expected time: {2}", CurrentWaitCountdownIndex, time, currentCountdown.TimeEnd);
+                            // YargLogger.LogFormatTrace("Countdown {0} deactivated at time {1}. Expected time: {2}", CurrentWaitCountdownIndex, time, currentCountdown.TimeEnd);
                         }
 
                         CurrentWaitCountdownIndex++;
@@ -779,7 +779,7 @@ namespace YARG.Core.Engine
 
             if (note.IsLaneStart)
             {
-                YargLogger.LogFormatTrace("Starting lane behavior at time {0}. ", CurrentTime);
+                // YargLogger.LogFormatTrace("Starting lane behavior at time {0}. ", CurrentTime);
 
                 // This was a manually hit lane note while lane behavior was disabled,
                 // either IsLaneStart or starting a new combo after a mid-lane miss
@@ -798,12 +798,12 @@ namespace YARG.Core.Engine
             }
             else if (note.IsLaneEnd)
             {
-                YargLogger.LogFormatTrace("Lane ending at {0}", CurrentTime);
+                // YargLogger.LogFormatTrace("Lane ending at {0}", CurrentTime);
                 RequiredLaneNote = -1;
                 NextTrillNote = -1;
             }
 
-            YargLogger.LogFormatTrace("Lane note hit at {0}", CurrentTime);
+            // YargLogger.LogFormatTrace("Lane note hit at {0}", CurrentTime);
         }
 
         // Intercept a missed note while a lane phrase is active
@@ -829,7 +829,7 @@ namespace YARG.Core.Engine
                     return false;
                 }
 
-                YargLogger.LogFormatTrace("Missed note with time of {0} was forgiven by lane", note.Time);
+                // YargLogger.LogFormatTrace("Missed note with time of {0} was forgiven by lane", note.Time);
                 HitNote(note);
 
                 return true;
@@ -902,7 +902,7 @@ namespace YARG.Core.Engine
                 {
                     // This is either a non-lane note in the middle of the phrase
                     // Or we are in overstrum forgiveness window after lane has ended
-                    YargLogger.LogFormatTrace("Lane input did not extend LaneExpireTime at {0}", CurrentTime);
+                    // YargLogger.LogFormatTrace("Lane input did not extend LaneExpireTime at {0}", CurrentTime);
                     return;
                 }
 
@@ -968,7 +968,7 @@ namespace YARG.Core.Engine
         protected void UpdateLaneAutohitExpireTime()
         {
             LaneAutohitExpireTime = CurrentTime + EngineParameters.HitWindow.LaneAutohitWindow;
-            YargLogger.LogFormatTrace("LaneExpireTime extended to {0}. LaneAutohitWindow {1}. Increment {2}.", LaneAutohitExpireTime, EngineParameters.HitWindow.LaneAutohitWindow, LaneAutohitExpireTime - CurrentTime);
+            // YargLogger.LogFormatTrace("LaneExpireTime extended to {0}. LaneAutohitWindow {1}. Increment {2}.", LaneAutohitExpireTime, EngineParameters.HitWindow.LaneAutohitWindow, LaneAutohitExpireTime - CurrentTime);
         }
 
         protected bool SkipPreviousNotes(TNoteType current)
@@ -1007,7 +1007,7 @@ namespace YARG.Core.Engine
 
                 if (!prevNote.WasHit && !prevNote.WasMissed)
                 {
-                    YargLogger.LogFormatTrace("Missed note (Index: {0}) ({1}) due to note skip at {2}", NoteIndex, prevNote.IsParent ? "Parent" : "Child", CurrentTime);
+                    // YargLogger.LogFormatTrace("Missed note (Index: {0}) ({1}) due to note skip at {2}", NoteIndex, prevNote.IsParent ? "Parent" : "Child", CurrentTime);
                     MissNote(prevNote);
                 }
 
@@ -1020,7 +1020,7 @@ namespace YARG.Core.Engine
                             continue;
                         }
 
-                        YargLogger.LogFormatTrace("Missed note (Index: {0}) ({1}) due to note skip at {2}", NoteIndex, child.IsParent ? "Parent" : "Child", CurrentTime);
+                        // YargLogger.LogFormatTrace("Missed note (Index: {0}) ({1}) due to note skip at {2}", NoteIndex, child.IsParent ? "Parent" : "Child", CurrentTime);
                         MissNote(child);
                     }
                 }
@@ -1125,7 +1125,7 @@ namespace YARG.Core.Engine
                         if (CurrentTime >= sustain.LeniencyDropTime + EngineParameters.SustainDropLeniency * EngineParameters.SongSpeed)
                         {
                             dropped = true;
-                            YargLogger.LogFormatTrace("Dropping sustain using leniency time at {0}", CurrentTime);
+                            // YargLogger.LogFormatTrace("Dropping sustain using leniency time at {0}", CurrentTime);
                         }
                     }
                     else
@@ -1151,8 +1151,8 @@ namespace YARG.Core.Engine
                     // Sustain has ended, so commit the points
                     if (dropped || isBurst || isEndOfSustain)
                     {
-                        YargLogger.LogFormatTrace("Finished scoring sustain ({0}) at {1} (dropped: {2}, burst: {3})",
-                            sustain.Note.Tick, CurrentTime, dropped, isBurst);
+                        // YargLogger.LogFormatTrace("Finished scoring sustain ({0}) at {1} (dropped: {2}, burst: {3})",
+                            // sustain.Note.Tick, CurrentTime, dropped, isBurst);
 
                         double finalScore = CalculateSustainPoints(ref sustain, sustainTick);
                         var points = (int) Math.Ceiling(finalScore);
@@ -1160,7 +1160,7 @@ namespace YARG.Core.Engine
                         AddScore(points);
                         ulong timeAsUlong = UnsafeExtensions.DoubleToUInt64Bits(CurrentTime);
                         ulong baseScoreAsUlong = UnsafeExtensions.DoubleToUInt64Bits(sustain.BaseScore);
-                        YargLogger.LogFormatTrace("Added {0} points for end of sustain at {1} (0x{2}). Base Score/Tick: {3} (0x{4}), {5}", points, CurrentTime, timeAsUlong.ToString("X"), sustain.BaseScore, baseScoreAsUlong.ToString("X"), sustain.BaseTick);
+                        // YargLogger.LogFormatTrace("Added {0} points for end of sustain at {1} (0x{2}). Base Score/Tick: {3} (0x{4}), {5}", points, CurrentTime, timeAsUlong.ToString("X"), sustain.BaseScore, baseScoreAsUlong.ToString("X"), sustain.BaseTick);
 
                         // SustainPoints must include the multiplier, but NOT the star power multiplier
                         int sustainPoints = points * EngineStats.ScoreMultiplier;
@@ -1200,7 +1200,7 @@ namespace YARG.Core.Engine
 
             ActiveSustains.Add(sustain);
 
-            YargLogger.LogFormatTrace("Started sustain at {0} (tick len: {1}, time len: {2})", CurrentTime, note.TickLength, note.TimeLength);
+            // YargLogger.LogFormatTrace("Started sustain at {0} (tick len: {1}, time len: {2})", CurrentTime, note.TickLength, note.TimeLength);
 
             OnSustainStart?.Invoke(note);
         }
@@ -1208,7 +1208,7 @@ namespace YARG.Core.Engine
         protected virtual void EndSustain(int sustainIndex, bool dropped, bool isEndOfSustain)
         {
             var sustain = ActiveSustains[sustainIndex];
-            YargLogger.LogFormatTrace("Ended sustain ({0}) at {1} (dropped: {2}, end: {3})", sustain.Note.Tick, CurrentTime, dropped, isEndOfSustain);
+            // YargLogger.LogFormatTrace("Ended sustain ({0}) at {1} (dropped: {2}, end: {3})", sustain.Note.Tick, CurrentTime, dropped, isEndOfSustain);
             ActiveSustains.RemoveAt(sustainIndex);
 
             OnSustainEnd?.Invoke(sustain.Note, CurrentTime, sustain.HasFinishedScoring);
@@ -1281,7 +1281,7 @@ namespace YARG.Core.Engine
                 if (BaseStats.IsStarPowerActive)
                 {
                     UpdateStarPowerEnds();
-                    YargLogger.LogFormatTrace("Clamped SP. New end tick and time: {0}, {1}", StarPowerTickEndPosition, StarPowerEndTime);
+                    // YargLogger.LogFormatTrace("Clamped SP. New end tick and time: {0}, {1}", StarPowerTickEndPosition, StarPowerEndTime);
                 }
             }
 
@@ -1497,7 +1497,7 @@ namespace YARG.Core.Engine
 
         protected void EndCoda()
         {
-            YargLogger.LogFormatTrace("Coda ended at time {0} with bonus score {1}", CurrentTime, Codas[CurrentCodaIndex].TotalCodaBonus);
+            // YargLogger.LogFormatTrace("Coda ended at time {0} with bonus score {1}", CurrentTime, Codas[CurrentCodaIndex].TotalCodaBonus);
 
             IsCodaActive = false;
             CodaHasStarted = false;
@@ -1795,7 +1795,7 @@ namespace YARG.Core.Engine
                     }
 
                     WaitCountdowns.Add(newCountdown);
-                    YargLogger.LogFormatTrace("Created a WaitCountdown at time {0} of {1} seconds in length", newCountdown.Time, newCountdown.TimeLength);
+                    // YargLogger.LogFormatTrace("Created a WaitCountdown at time {0} of {1} seconds in length", newCountdown.Time, newCountdown.TimeLength);
                 }
             }
         }
