@@ -43,7 +43,7 @@ namespace YARG.Core.Engine
             Start(ref _startTime, currentTime);
             IsActive = true;
 
-            YargLogger.LogFormatTrace("Started {0} timer at {1}", Name, currentTime);
+            // YargLogger.LogFormatTrace("Started {0} timer at {1}", Name, currentTime);
         }
 
         public void StartWithOffset(double currentTime, double offset)
@@ -51,7 +51,7 @@ namespace YARG.Core.Engine
             StartWithOffset(ref _startTime, currentTime, TimeThreshold * _speed, offset);
             IsActive = true;
 
-            YargLogger.LogFormatTrace("Started {0} timer at {1} with offset {2}", Name, currentTime, offset);
+            // YargLogger.LogFormatTrace("Started {0} timer at {1} with offset {2}", Name, currentTime, offset);
         }
 
         public void Disable(double currentTime, bool early = false)
@@ -78,7 +78,7 @@ namespace YARG.Core.Engine
             }
 
             IsActive = false;
-            YargLogger.LogFormatTrace("Disabled {0} timer at {1}", Name, currentTime);
+            // YargLogger.LogFormatTrace("Disabled {0} timer at {1}", Name, currentTime);
         }
 
         public void Reset()

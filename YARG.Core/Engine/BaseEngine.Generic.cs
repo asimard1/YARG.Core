@@ -1248,7 +1248,7 @@ namespace YARG.Core.Engine
                 }
 
                 BaseStats.TotalStarPowerBarsFilled = (double) BaseStats.TotalStarPowerTicks / TicksPerFullSpBar;
-                YargLogger.LogFormatTrace("Gained {0} whammy ticks this update (Total: {1}), {2} sustains active. SP right now: {3}", whammyTicks, EngineStats.StarPowerWhammyTicks, ActiveSustains.Count, BaseStats.StarPowerTickAmount);
+                // YargLogger.LogFormatTrace("Gained {0} whammy ticks this update (Total: {1}), {2} sustains active. SP right now: {3}", whammyTicks, EngineStats.StarPowerWhammyTicks, ActiveSustains.Count, BaseStats.StarPowerTickAmount);
             }
 
             PreviousStarPowerTickPosition = StarPowerTickPosition;
@@ -1298,7 +1298,7 @@ namespace YARG.Core.Engine
             if (StarPowerWhammyTimer.IsActive && StarPowerWhammyTimer.IsExpired(CurrentTime))
             {
                 StarPowerWhammyTimer.Disable(CurrentTime);
-                YargLogger.LogFormatTrace("Disabling whammy timer at {0}", CurrentTime);
+                // YargLogger.LogFormatTrace("Disabling whammy timer at {0}", CurrentTime);
             }
         }
 
@@ -1323,7 +1323,7 @@ namespace YARG.Core.Engine
 
             double gain = (quarterTick - lastQuarterTick) * GAIN_FACTOR + tickRemainder;
             double rounded = Math.Round(gain);
-            YargLogger.LogTrace($"Calculating whammy gain, quarterTick: {quarterTick}, lastQuarterTick: {lastQuarterTick}, gain: {gain}, rounded: {rounded}, remainderIn: {tickRemainder}");
+            // YargLogger.LogTrace($"Calculating whammy gain, quarterTick: {quarterTick}, lastQuarterTick: {lastQuarterTick}, gain: {gain}, rounded: {rounded}, remainderIn: {tickRemainder}");
             tickRemainder = gain - rounded;
 
             return (uint) rounded;
