@@ -15,5 +15,6 @@ namespace YARG.Core.Engine.Keys
         public double FatFingerTimerStartTime;
         public int    FatFingerKey;   // -1 when null
         public int    FatFingerNoteIndex; // -1 when null
+        public int    FatFingerNoteKey;   // -1 when null
     }
 }

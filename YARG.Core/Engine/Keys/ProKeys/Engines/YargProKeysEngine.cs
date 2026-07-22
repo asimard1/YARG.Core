@@ -74,44 +74,64 @@ namespace YARG.Core.Engine.Keys.Engines
                 // Fat Fingered key was released before the timer expired
                 if (KeyReleasedThisUpdate == FatFingerKey && !FatFingerTimer.IsExpired(CurrentTime))
                 {
-                    YargLogger.LogFormatTrace("Released fat fingered key at {0}. Note was hit: {1}", CurrentTime, FatFingerNote!.WasHit);
-
-                    // The note must be hit to disable the timer
-                    if (FatFingerNote!.WasHit)
+                    if (FatFingerNote == null)
                     {
-                        YargLogger.LogTrace("Disabling fat finger timer as the note has been hit. Fat Finger was Ignored.");
+                        YargLogger.LogTrace("Invalid fat finger state detected during release handling. Disabling timer.");
                         FatFingerTimer.Disable(time, early: true);
                         FatFingerKey = null;
                         FatFingerNote = null;
+                    }
+                    else
+                    {
+                        YargLogger.LogFormatTrace("Released fat fingered key at {0}. Note was hit: {1}", CurrentTime, FatFingerNote.WasHit);
 
-                        EngineStats.FatFingersIgnored++;
+                        // The note must be hit to disable the timer
+                        if (FatFingerNote.WasHit)
+                        {
+                            YargLogger.LogTrace("Disabling fat finger timer as the note has been hit. Fat Finger was Ignored.");
+                            FatFingerTimer.Disable(time, early: true);
+                            FatFingerKey = null;
+                            FatFingerNote = null;
+
+                            EngineStats.FatFingersIgnored++;
+                        }
                     }
                 }
                 else if(FatFingerTimer.IsExpired(CurrentTime))
                 {
-                    YargLogger.LogFormatTrace("Fat Finger timer expired at {0}", CurrentTime);
-
-                    var fatFingerKeyMask = 1 << FatFingerKey;
-
-                    var isHoldingWrongKey = (KeyMask & fatFingerKeyMask) == fatFingerKeyMask;
-
-                    // Overhit if key is still held OR note was not hit
-                    if (isHoldingWrongKey || !FatFingerNote!.WasHit)
+                    if (!FatFingerKey.HasValue || FatFingerNote == null)
                     {
-                        YargLogger.LogFormatTrace("Overhit due to fat finger with key {0}. KeyMask: {1}. Holding: {2}. WasHit: {3}",
-                            FatFingerKey, KeyMask, isHoldingWrongKey, FatFingerNote!.WasHit);
-                        Overhit(FatFingerKey!.Value);
+                        YargLogger.LogTrace("Invalid fat finger state detected at timer expiration. Disabling timer.");
+                        FatFingerTimer.Disable(time);
+                        FatFingerKey = null;
+                        FatFingerNote = null;
                     }
                     else
                     {
-                        EngineStats.FatFingersIgnored++;
-                        YargLogger.LogFormatTrace("Fat finger was ignored. KeyMask: {0}. Holding: {1}. WasHit: {2}",
-                            KeyMask, isHoldingWrongKey, FatFingerNote!.WasHit);
-                    }
+                        YargLogger.LogFormatTrace("Fat Finger timer expired at {0}", CurrentTime);
 
-                    FatFingerTimer.Disable(time);
-                    FatFingerKey = null;
-                    FatFingerNote = null;
+                        var fatFingerKeyMask = 1 << FatFingerKey.Value;
+
+                        var isHoldingWrongKey = (KeyMask & fatFingerKeyMask) == fatFingerKeyMask;
+
+                        // Overhit if key is still held OR note was not hit
+                        if (isHoldingWrongKey || !FatFingerNote.WasHit)
+                        {
+                            YargLogger.LogFormatTrace("Overhit due to fat finger with key {0}. KeyMask: {1}. Holding: {2}. WasHit: {3}",
+                                FatFingerKey.Value, KeyMask, isHoldingWrongKey, FatFingerNote.WasHit);
+                            Overhit(FatFingerKey.Value);
+                        }
+                        else
+                        {
+                            EngineStats.FatFingersIgnored++;
+                            YargLogger.LogFormatTrace("Fat finger was ignored. KeyMask: {0}. Holding: {1}. WasHit: {2}",
+                                KeyMask, isHoldingWrongKey, FatFingerNote.WasHit);
+                        }
+
+                        FatFingerTimer.Disable(time);
+                        FatFingerKey = null;
+                        FatFingerNote = null;
+                    }
                 }
             }
 

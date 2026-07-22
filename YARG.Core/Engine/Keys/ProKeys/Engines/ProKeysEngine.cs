@@ -304,21 +304,51 @@ namespace YARG.Core.Engine.Keys
             snap.FatFingerTimerActive = FatFingerTimer.IsActive;
             snap.FatFingerTimerStartTime = FatFingerTimer.StartTime;
             snap.FatFingerKey = FatFingerKey ?? -1;
-            snap.FatFingerNoteIndex = FatFingerNote != null ? Notes.IndexOf(FatFingerNote) : -1;
+
+            if (FatFingerNote != null)
+            {
+                // FatFingerNote can be a child note inside a chord, so index its
+                // parent (or itself if it's already top-level) and store the key
+                // to re-locate the exact child note on restore.
+                snap.FatFingerNoteIndex = Notes.IndexOf(FatFingerNote.ParentOrSelf);
+                snap.FatFingerNoteKey = FatFingerNote.Key;
+            }
+            else
+            {
+                snap.FatFingerNoteIndex = -1;
+                snap.FatFingerNoteKey = -1;
+            }
         }
 
         protected override void RestoreKeysSnapshot(KeysEngineSnapshot snap)
         {
             base.RestoreKeysSnapshot(snap);
             FatFingerTimer.Reset();
-            if (snap.FatFingerTimerActive)
+            FatFingerKey = snap.FatFingerKey < 0 ? (int?) null : snap.FatFingerKey;
+
+            FatFingerNote = null;
+            if (snap.FatFingerNoteIndex >= 0 && snap.FatFingerNoteIndex < Notes.Count)
+            {
+                foreach (var candidate in Notes[snap.FatFingerNoteIndex].AllNotes)
+                {
+                    if (candidate.Key == snap.FatFingerNoteKey)
+                    {
+                        FatFingerNote = candidate;
+                        break;
+                    }
+                }
+            }
+
+            if (snap.FatFingerTimerActive && FatFingerKey.HasValue && FatFingerNote != null)
             {
                 FatFingerTimer.Start(snap.FatFingerTimerStartTime);
             }
-            FatFingerKey = snap.FatFingerKey < 0 ? (int?) null : snap.FatFingerKey;
-            FatFingerNote = (snap.FatFingerNoteIndex >= 0 && snap.FatFingerNoteIndex < Notes.Count)
-                ? Notes[snap.FatFingerNoteIndex]
-                : null;
+            else
+            {
+                FatFingerTimer.Reset();
+                FatFingerKey = null;
+                FatFingerNote = null;
+            }
         }
     }
 }
