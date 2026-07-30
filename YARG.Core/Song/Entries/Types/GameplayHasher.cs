@@ -113,9 +113,14 @@ namespace YARG.Core.Song
                 WriteGuitarTrack(writer, track, scale);
             }
 
-            // Drums, vocals, and pro-instruments follow the same shape but need their
-            // own note types (DrumNote, vocal phrases, etc.) - left out of this first
-            // pass on purpose to keep the PR reviewable; same pattern applies.
+            foreach (var track in chart.VocalsTracks)
+            {
+                WriteVocalsTrack(writer, track, scale);
+            }
+
+            // Drums and pro-instruments follow the same shape but need their own note
+            // types (DrumNote, etc.) - left out of this first pass on purpose to keep
+            // the PR reviewable; same pattern applies.
 
             return HashWrapper.Hash(stream.ToArray());
         }
@@ -156,6 +161,60 @@ namespace YARG.Core.Song
                     writer.Write((sustain + SUSTAIN_QUANTIZE / 2) / SUSTAIN_QUANTIZE);
                 }
             }
+        }
+
+        private static void WriteVocalsTrack(BinaryWriter writer, Chart.VocalsTrack track, double scale)
+        {
+            if (track.IsEmpty)
+            {
+                return;
+            }
+
+            writer.Write((byte) track.Instrument);
+
+            // track.Parts is already voice-ordered (solo vocals: 1 part; harmony:
+            // HARM1/HARM2/HARM3 at indices 0/1/2) - iterating it directly gives a
+            // fixed, deterministic order without sorting by VocalNote.HarmonyPart.
+            foreach (var part in track.Parts)
+            {
+                if (part.IsEmpty)
+                {
+                    continue;
+                }
+
+                writer.Write(part.NotePhrases.Count);
+
+                foreach (var phrase in part.NotePhrases)
+                {
+                    var parent = phrase.PhraseParentNote;
+
+                    writer.Write((uint) Math.Round(parent.Tick * scale));
+                    writer.Write(parent.IsPercussionPhrase);
+                    writer.Write(parent.ChildNotes.Count);
+
+                    foreach (var note in parent.ChildNotes)
+                    {
+                        writer.Write((uint) Math.Round(note.Tick * scale));
+                        writer.Write(note.Type == Chart.VocalNoteType.Percussion);
+                        writer.Write(NormalizePitch(note.Pitch));
+
+                        uint length = (uint) Math.Round(note.TickLength * scale);
+                        // Same rounding-bucket trick as the guitar sustain quantization -
+                        // held-note lengths are just as prone to per-extractor tick
+                        // trimming as guitar sustains are.
+                        writer.Write((length + SUSTAIN_QUANTIZE / 2) / SUSTAIN_QUANTIZE);
+                    }
+                }
+            }
+        }
+
+        // Pitch is a float, but every real chart stores whole MIDI note numbers (or -1
+        // for unpitched/percussion) - round defensively instead of trusting that, then
+        // narrow to sbyte since MIDI pitches fit in 0-127 and -1 is the only negative.
+        private static sbyte NormalizePitch(float pitch)
+        {
+            if (pitch < 0) return -1;
+            return (sbyte) Math.Round(pitch);
         }
     }
 }
