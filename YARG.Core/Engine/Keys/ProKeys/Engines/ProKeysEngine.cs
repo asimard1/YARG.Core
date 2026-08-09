@@ -140,8 +140,6 @@ namespace YARG.Core.Engine.Keys
 
             if (note.IsGlissando)
             {
-                UpdateLaneAutohitExpireTime();
-
                 if (note.IsGlissandoStart)
                 {
                     IsGlissandoActive = true;
@@ -172,6 +170,29 @@ namespace YARG.Core.Engine.Keys
             base.HitNote(note);
         }
 
+        protected bool AutohitNoteFromGlissando(ProKeysNote note)
+        {
+            // If the note was already hit or missed, don't let the caller attempt to autohit it
+            if (note.WasHit || note.WasMissed)
+            {
+                return false;
+            }
+
+            if (note.Time > LaneAutohitExpireTime)
+            {
+                return false;
+            }
+
+            if (note.IsGlissando)
+            {
+                // Glissandos don't require the first note to be hit accurately, so we can just hit the note and return true
+                HitNote(note);
+                return true;
+            }
+
+            return false;
+        }
+
         protected override void MissNote(ProKeysNote note)
         {
             if (note.WasHit || note.WasMissed)
@@ -190,14 +211,6 @@ namespace YARG.Core.Engine.Keys
             {
                 // Resolve the whole chord, matching GuitarEngine (see DrumsEngine.MissNote).
                 note.SetHitState(true, true);
-                base.HitNote(note);
-                return;
-            }
-
-            // Autohit glissando notes as long as the player keeps providing inputs
-            if (note.IsGlissando && note.Time < LaneAutohitExpireTime)
-            {
-                note.SetHitState(true, false);
                 base.HitNote(note);
                 return;
             }
@@ -253,7 +266,7 @@ namespace YARG.Core.Engine.Keys
                     OnSyncNoteMissed?.Invoke(NoteIndex);
                 }
             }
-            base.HitNote(note);
+            base.MissNote(note);
         }
 
         protected override void AddScore(ProKeysNote note)

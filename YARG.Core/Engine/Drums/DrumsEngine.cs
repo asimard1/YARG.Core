@@ -16,6 +16,9 @@ namespace YARG.Core.Engine.Drums
         public OverhitEvent? OnOverhit;
         public PadHitEvent?  OnPadHit;
 
+        protected bool IsKickLaneActive;
+        protected double KickLaneAutohitExpireTime;
+
         /// <summary>
         /// The integer value for the pad that was inputted this update. <c>null</c> is none, and the value can
         /// be based off of <see cref="FourLaneDrumPad"/> or <see cref="FiveLaneDrumPad"/>.
@@ -30,6 +33,9 @@ namespace YARG.Core.Engine.Drums
 
         protected override int WildcardMask => _wildcardMask;
 
+        // Stores the integer representation of a FourLaneKickPad or FiveLaneKickPad, depending on drum mode
+        protected int Kick;
+
         private int _wildcardMask;
 
         protected DrumsEngine(InstrumentDifficulty<DrumNote> chart, SyncTrack syncTrack,
@@ -42,6 +48,14 @@ namespace YARG.Core.Engine.Drums
                 DrumsEngineParameters.DrumMode.ProFourLane => (int) FourLaneDrumPad.Wildcard,
                 DrumsEngineParameters.DrumMode.FiveLane => (int) FiveLaneDrumPad.Wildcard,
                 _ => -1
+            };
+
+            Kick = EngineParameters.Mode switch
+            {
+                DrumsEngineParameters.DrumMode.NonProFourLane or
+                DrumsEngineParameters.DrumMode.ProFourLane => (int) FourLaneDrumPad.Kick,
+                DrumsEngineParameters.DrumMode.FiveLane => (int) FiveLaneDrumPad.Kick,
+                _ => throw new ArgumentOutOfRangeException("Unreachable.")
             };
 
             foreach (var note in Notes)
@@ -69,6 +83,9 @@ namespace YARG.Core.Engine.Drums
             HitVelocity = null;
             Action = null;
 
+            IsKickLaneActive = false;
+            KickLaneAutohitExpireTime = -1;
+
             base.Reset(keepCurrentButtons);
         }
 
@@ -89,9 +106,7 @@ namespace YARG.Core.Engine.Drums
             // Cancel overhit if WaitCountdown is active
             if (IsWaitCountdownActive)
             {
-                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
-{
-    YargLogger.LogFormatTrace("Overhit prevented during WaitCountdown at time: {0}, tick: {1}",
+                YargLogger.LogFormatTrace("Overhit prevented during WaitCountdown at time: {0}, tick: {1}",
                     CurrentTime, CurrentTick);
 }
 
@@ -108,15 +123,12 @@ namespace YARG.Core.Engine.Drums
             {
                 // Do not count this as an overhit if the last pad hit was part of an active lane
                 return;
-            }
+            }            
 
             // Prevent overhit too close to a lane that accepts the overhit
-            if (IsInLaneLeniencyWindow((int)PadHit))
+            if (PadHit.HasValue && IsInLaneLeniencyWindow((int)PadHit))
             {
-                if (YargLogger.IsLevelEnabled(LogLevel.Trace))
-{
-    YargLogger.LogFormatTrace("Overhit prevented by lane end leniency at {0}", CurrentTime);
-}
+                YargLogger.LogFormatTrace("Overhit prevented by lane end leniency at {0}", CurrentTime);
                 return;
             }
 
@@ -144,6 +156,82 @@ namespace YARG.Core.Engine.Drums
             // Routed through OnSyncOverstrum so the wire format carries one "wrong input"
             // packet across instruments.
             OnSyncOverstrum?.Invoke(CurrentTime);
+        }
+
+        protected override bool ActiveLaneIncludesNote(int inputNote)
+        {
+            if (inputNote == Kick)
+            {
+                return IsKickLaneActive;
+            }
+
+            return base.ActiveLaneIncludesNote(inputNote);
+        }
+
+        protected override bool IsInLaneLeniencyWindow(int inputNote)
+        {
+            if (inputNote == Kick)
+            {
+                if (IsKickLaneActive)
+                {
+                    return false;
+                }
+
+                if (
+                    NoteIndex < Notes.Count && // There is a next note
+                    Notes[NoteIndex].IsKickLaneStart && // That note is a kick lane start
+                    Notes[NoteIndex].Time - CurrentTime < EngineParameters.HitWindow.LaneProximityProtectionWindow // That lane is starting soon
+                )
+                {
+                    return true;
+                }
+
+                return (
+                    NoteIndex > 0 && // There is a previous note
+                    Notes[NoteIndex - 1].IsKickLaneEnd && // That note was a kick lane end
+                    CurrentTime - Notes[NoteIndex - 1].Time < EngineParameters.HitWindow.LaneProximityProtectionWindow // That lane ended recently
+                );
+            }
+
+            return base.IsInLaneLeniencyWindow(inputNote);
+        }
+
+        protected override bool ActiveLaneIncludesNote(int inputNote)
+        {
+            if (inputNote == Kick)
+            {
+                return IsKickLaneActive;
+            }
+
+            return base.ActiveLaneIncludesNote(inputNote);
+        }
+
+        protected override bool IsInLaneLeniencyWindow(int inputNote)
+        {
+            if (inputNote == Kick)
+            {
+                if (IsKickLaneActive)
+                {
+                    return false;
+                }
+
+                if (
+                    NoteIndex < Notes.Count && // There is a next note
+                    Notes[NoteIndex].IsKickLaneStart && // That note is a kick lane start
+                    Notes[NoteIndex].Time - CurrentTime < EngineParameters.HitWindow.LaneProximityProtectionWindow // That lane is starting soon
+                )
+                {
+                    return true;
+                }
+
+                return (
+                    NoteIndex > 0 && // There is a previous note
+                    Notes[NoteIndex - 1].IsKickLaneEnd && // That note was a kick lane end
+                    CurrentTime - Notes[NoteIndex - 1].Time < EngineParameters.HitWindow.LaneProximityProtectionWindow // That lane ended recently
+                );
+            }
+
+            return base.IsInLaneLeniencyWindow(inputNote);
         }
 
         protected override void HitNote(DrumNote note)
@@ -202,6 +290,24 @@ namespace YARG.Core.Engine.Drums
             {
                 ActivateStarPower();
             }
+
+            if (note.IsKickLane)
+            {
+                if (note.IsKickLaneStart)
+                {
+                    YargLogger.LogFormatTrace("Starting kick lane behavior at time {0}. ", CurrentTime);
+                    IsKickLaneActive = true;
+                    UpdateKickLaneAutohitExpireTime();
+                }
+                else if (note.IsKickLaneEnd)
+                {
+                    YargLogger.LogFormatTrace("Lane ending at {0}", CurrentTime);
+                    IsKickLaneActive = false;
+                }
+
+                YargLogger.LogFormatTrace("Kick lane note hit at {0}", CurrentTime);
+            }
+
 
             IncrementCombo();
 
@@ -345,6 +451,23 @@ namespace YARG.Core.Engine.Drums
             return awardVelocityBonus;
         }
 
+        protected override void GenerateQueuedUpdates(double nextTime)
+        {
+            base.GenerateQueuedUpdates(nextTime);
+
+            double previousTime = CurrentTime;
+            uint previousTick = CurrentTick;
+            uint previousSpTick = StarPowerTickPosition;
+
+            if (IsKickLaneActive)
+            {
+                if (IsTimeBetween(KickLaneAutohitExpireTime, previousTime, nextTime))
+                {
+                    QueueUpdateTime(KickLaneAutohitExpireTime, "Potential Lane Expiration Time");
+                }
+            }
+        }
+
         protected override void MissNote(DrumNote note)
         {
             if (note.WasHit || note.WasMissed)
@@ -376,6 +499,22 @@ namespace YARG.Core.Engine.Drums
             if (note.IsStarPower)
             {
                 StripStarPower(note);
+            }
+
+            if (note.IsKickLane)
+            {
+                if (note.IsKickLaneStart)
+                {
+                    YargLogger.LogFormatTrace("Starting kick lane behavior at time {0}. ", CurrentTime);
+                    IsKickLaneActive = true;
+                }
+                else if (note.IsKickLaneEnd)
+                {
+                    YargLogger.LogFormatTrace("Lane ending at {0}", CurrentTime);
+                    IsKickLaneActive = false;
+                }
+
+                YargLogger.LogFormatTrace("Kick lane note missed at {0}", CurrentTime);
             }
 
             ResetCombo();
@@ -546,6 +685,46 @@ namespace YARG.Core.Engine.Drums
             };
         }
 
+        protected override void SubmitLaneNote(int newNote)
+        {
+            if (NoteIndex >= Notes.Count)
+            {
+                return;
+            }
+
+            if (newNote == Kick)
+            {
+                if (IsKickLaneActive)
+                {
+                    var currentNote = Notes[NoteIndex].ParentOrSelf;
+
+                    var containsKickLaneNote = false;
+                    foreach (var note in currentNote.AllNotes)
+                    {
+                        if (note.IsKickLane)
+                        {
+                            containsKickLaneNote = true;
+                            break;
+                        }
+                    }
+
+                    if (!containsKickLaneNote)
+                    {
+                        // This is either a non-kick in the middle of the kick lane,
+                        // or we are in overhit forgiveness window after the kick lane has ended
+                        YargLogger.LogFormatTrace("Lane input did not extend KickLaneExpireTime at {0}", CurrentTime);
+                        return;
+                    }
+
+                    UpdateKickLaneAutohitExpireTime();
+                }
+            }
+            else
+            {
+                base.SubmitLaneNote(newNote);
+            }
+        }
+
         protected static DrumsAction ConvertPadToAction(DrumsEngineParameters.DrumMode mode, int pad)
         {
             return mode switch
@@ -667,6 +846,20 @@ namespace YARG.Core.Engine.Drums
                     "DrumsEngine.RestoreSnapshot: snapshot must be a DrumsEngineSnapshot.");
             }
             RestoreGenericSnapshot(snap);
+        }
+
+        private void UpdateKickLaneAutohitExpireTime()
+        {
+            if (Chart.Difficulty is Difficulty.ExpertPlus)
+            {
+                KickLaneAutohitExpireTime = CurrentTime + EngineParameters.HitWindow.LaneAutohitWindow;
+            }
+            else
+            {
+                // When the player has only one pedal, halve the expected input speed for kick lanes
+                KickLaneAutohitExpireTime = CurrentTime + (EngineParameters.HitWindow.LaneAutohitWindow * 2);
+            }
+            YargLogger.LogFormatTrace("KickLaneExpireTime extended to {0}. LaneAutohitWindow {1}. Increment {2}.", KickLaneAutohitExpireTime, EngineParameters.HitWindow.LaneAutohitWindow, KickLaneAutohitExpireTime - CurrentTime);
         }
     }
 }

@@ -828,7 +828,7 @@ namespace YARG.Core.Engine
                 AdvanceToNextNote(note);
             }
 
-            if ((!LanesExist && !note.IsLaneEnd) || !note.IsLane || !BaseParameters.EnableLanes)
+            if (!note.IsLane || !BaseParameters.EnableLanes)
             {
                 return;
             }
@@ -944,7 +944,7 @@ namespace YARG.Core.Engine
             }
         }
 
-        protected void SubmitLaneNote(int newNote)
+        protected virtual void SubmitLaneNote(int newNote)
         {
             if (!IsLaneActive || NoteIndex >= Notes.Count)
             {
@@ -1011,7 +1011,7 @@ namespace YARG.Core.Engine
         // This cares whether the input would satisfy the lane that's providing leniency.
         // Used by Drums and Keys engines to provide forgiveness only for inputs that would satisfy a nearby lane, not for unrelated inputs.
         // Guitar engine has a parameterless version that doesn't check inputs against adjacent lanes.
-        protected bool IsInLaneLeniencyWindow(int inputNote)
+        protected virtual bool IsInLaneLeniencyWindow(int inputNote)
         {
             if (IsLaneActive)
             {
@@ -1146,6 +1146,13 @@ namespace YARG.Core.Engine
         {
             if (!note.IsSolo)
             {
+                return;
+            }
+
+            if (CurrentSoloIndex >= Solos.Count)
+            {
+                // If this happens, something has probably gone wrong
+                YargLogger.LogFormatWarning("Solo note has been hit at time {0}, but all solos have already been completed! Ignoring solo", CurrentTime);
                 return;
             }
 
@@ -1450,8 +1457,8 @@ namespace YARG.Core.Engine
         protected void UpdateStars()
         {
             // Update which star we're on
-            while (CurrentStarIndex < StarScoreThresholds.Length &&
-                EngineStats.TotalScore > StarScoreThresholds[CurrentStarIndex])
+            while (CurrentStarIndex < StarScoreThresholds!.Length &&
+                EngineStats.TotalScore > StarScoreThresholds![CurrentStarIndex])
             {
                 CurrentStarIndex++;
             }
@@ -1742,17 +1749,6 @@ namespace YARG.Core.Engine
         {
             NoteIndex++;
             ReRunHitLogic = true;
-
-            if (!LanesExist)
-            {
-                return;
-            }
-
-            if (note.IsLaneEnd)
-            {
-                // Update the result of LanesExist
-                CurrentLaneIndex++;
-            }
         }
 
         public double GetAverageNoteDistance(TNoteType note)
@@ -1781,7 +1777,7 @@ namespace YARG.Core.Engine
         {
             var soloSections = new List<SoloSection>();
 
-            if (Notes.Count > 0 && Notes[0] is { IsSolo: true, IsSoloEnd: false })
+            if (Notes.Count > 0 && Notes[0].IsSolo)
             {
                 Notes[0].ActivateFlag(NoteFlags.SoloStart);
             }
@@ -1851,8 +1847,8 @@ namespace YARG.Core.Engine
 
                 switch (thisPhrase.Type)
                 {
-                    case PhraseType.TremoloLane:
-                    case PhraseType.TrillLane:
+                    case PhraseType.TremoloLane
+                    or PhraseType.TrillLane:
                         TotalLanes++;
                         break;
                 }
@@ -1992,11 +1988,11 @@ namespace YARG.Core.Engine
             }
             else if (laneNote.IsLaneEnd)
             {
-                otherNoteInTrill = laneNote.PreviousNote.LaneNote;
+                otherNoteInTrill = laneNote.PreviousNote!.LaneNote;
             }
             else
             {
-                otherNoteInTrill = laneNote.NextNote.LaneNote;
+                otherNoteInTrill = laneNote.NextNote!.LaneNote;
             }
 
             return (requiredLaneNote, otherNoteInTrill);

@@ -1,4 +1,5 @@
-﻿using System;
+#nullable disable
+using System;
 using System.IO;
 using Newtonsoft.Json;
 using YARG.Core.Chart;
@@ -12,7 +13,11 @@ namespace YARG.Core.Game
 {
     public partial class YargProfile
     {
-        private readonly int PROFILE_VERSION = 9;
+        /// <summary>
+        /// The current version for profile serialization.
+        /// Increment this when adding new fields to the profile that may affect deserialization.
+        /// </summary>
+        private const int PROFILE_VERSION = 9;
 
         public int Version;
 
@@ -553,7 +558,7 @@ namespace YARG.Core.Game
 
             writer.Write((byte) OpenLaneDisplayType);
 
-            writer.Write((byte)FourLaneDrumsHighwayOrdering.Length);
+            writer.Write((byte) FourLaneDrumsHighwayOrdering.Length);
             foreach (var item in FourLaneDrumsHighwayOrdering)
             {
                 writer.Write((byte) item);
