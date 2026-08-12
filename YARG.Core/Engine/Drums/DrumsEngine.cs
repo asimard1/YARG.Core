@@ -108,7 +108,6 @@ namespace YARG.Core.Engine.Drums
             {
                 YargLogger.LogFormatTrace("Overhit prevented during WaitCountdown at time: {0}, tick: {1}",
                     CurrentTime, CurrentTick);
-}
 
                 return;
             }
