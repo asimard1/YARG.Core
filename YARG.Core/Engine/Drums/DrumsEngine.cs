@@ -195,44 +195,6 @@ namespace YARG.Core.Engine.Drums
             return base.IsInLaneLeniencyWindow(inputNote);
         }
 
-        protected override bool ActiveLaneIncludesNote(int inputNote)
-        {
-            if (inputNote == Kick)
-            {
-                return IsKickLaneActive;
-            }
-
-            return base.ActiveLaneIncludesNote(inputNote);
-        }
-
-        protected override bool IsInLaneLeniencyWindow(int inputNote)
-        {
-            if (inputNote == Kick)
-            {
-                if (IsKickLaneActive)
-                {
-                    return false;
-                }
-
-                if (
-                    NoteIndex < Notes.Count && // There is a next note
-                    Notes[NoteIndex].IsKickLaneStart && // That note is a kick lane start
-                    Notes[NoteIndex].Time - CurrentTime < EngineParameters.HitWindow.LaneProximityProtectionWindow // That lane is starting soon
-                )
-                {
-                    return true;
-                }
-
-                return (
-                    NoteIndex > 0 && // There is a previous note
-                    Notes[NoteIndex - 1].IsKickLaneEnd && // That note was a kick lane end
-                    CurrentTime - Notes[NoteIndex - 1].Time < EngineParameters.HitWindow.LaneProximityProtectionWindow // That lane ended recently
-                );
-            }
-
-            return base.IsInLaneLeniencyWindow(inputNote);
-        }
-
         protected override void HitNote(DrumNote note)
         {
             HitNote(note, false);
