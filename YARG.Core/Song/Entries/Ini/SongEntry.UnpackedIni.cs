@@ -70,35 +70,23 @@ namespace YARG.Core.Song
         {
             if (_updateMoggPath != null && File.Exists(_updateMoggPath))
             {
-                var moggMixer = LoadUpdateMoggAudio(speed, volume, ignoreStems);
-                if (moggMixer != null)
+                var updateMoggMixer = LoadUpdateMoggAudio(speed, volume, ignoreStems);
+                if (updateMoggMixer != null)
                 {
-                    return moggMixer;
+                    return updateMoggMixer;
                 }
                 YargLogger.LogFormatError("Update mogg at {0} failed to load, falling back to loose audio files", _updateMoggPath);
             }
-            return LoadLooseAudio(speed, volume, enableCensoring, ignoreStems);
-        }
 
-        private StemMixer? LoadUpdateMoggAudio(float speed, double volume, SongStem[] ignoreStems)
-        {
-            var stream = new FileStream(_updateMoggPath!, FileMode.Open, FileAccess.Read, FileShare.Read, 1);
-            bool clampStemVolume = _metadata.Source.ToLowerInvariant() == "yarg";
-            return MoggAudioLoader.BuildMixer(stream, ToString(), speed, volume, clampStemVolume,
-                in _indices, in _panning, ignoreStems);
-        }
-
-        private StemMixer? LoadLooseAudio(float speed, double volume, bool enableCensoring, SongStem[] ignoreStems)
-        {
             var subFiles = GetSubFiles();
-            bool clampStemVolume = _metadata.Source.ToLowerInvariant() == "yarg";
+            bool clampStemVolume = GlobalAudioHandler.CLAMPED_AUDIO_SOURCES.Contains(_metadata.Source.ToLowerInvariant());
 
             // Prefer a raw multi-channel .mogg (+ its channel-map sidecar) over split
             // stem files, when both are present.
-            var moggMixer = TryLoadMoggAudio(subFiles, speed, volume, clampStemVolume, ignoreStems);
-            if (moggMixer != null)
+            var looseMoggMixer = TryLoadMoggAudio(subFiles, speed, volume, clampStemVolume, ignoreStems);
+            if (looseMoggMixer != null)
             {
-                return moggMixer;
+                return looseMoggMixer;
             }
 
             var mixer = GlobalAudioHandler.CreateMixer(ToString(), speed, volume, clampStemVolume: clampStemVolume,
@@ -165,6 +153,14 @@ namespace YARG.Core.Song
                 YargLogger.LogFormatInfo("Loaded {0} stems", mixer.Channels.Count);
             }
             return mixer;
+        }
+
+        private StemMixer? LoadUpdateMoggAudio(float speed, double volume, SongStem[] ignoreStems)
+        {
+            var stream = new FileStream(_updateMoggPath!, FileMode.Open, FileAccess.Read, FileShare.Read, 1);
+            bool clampStemVolume = GlobalAudioHandler.CLAMPED_AUDIO_SOURCES.Contains(_metadata.Source.ToLowerInvariant());
+            return MoggAudioLoader.BuildMixer(stream, ToString(), speed, volume, clampStemVolume,
+                in _indices, in _panning, ignoreStems);
         }
 
         /// <summary>
