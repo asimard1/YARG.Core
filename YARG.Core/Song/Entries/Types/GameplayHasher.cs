@@ -28,7 +28,7 @@ namespace YARG.Core.Song
     /// </summary>
     public static class GameplayHasher
     {
-        public const int HASH_VERSION = 26_07_17_00;
+        public const int HASH_VERSION = 26_08_24_00; // bump: fixed vocals-only collision, added drums/elite drums/pro guitar/pro keys
         // Every chart is rescaled to this PPQ before hashing, so two files authored
         // at different MIDI resolutions (e.g. 480 vs 960) still match as long as the
         // underlying timing is the same. SongChart.Resolution is read straight from
@@ -105,12 +105,12 @@ namespace YARG.Core.Song
             // not file/track order, so track shuffling between extractors is a no-op.
             foreach (var track in chart.FiveFretTracks)
             {
-                WriteGuitarTrack(writer, track, scale);
+                WriteInstrumentTrack(writer, track, scale, WriteGuitarNote);
             }
 
             foreach (var track in chart.SixFretTracks)
             {
-                WriteGuitarTrack(writer, track, scale);
+                WriteInstrumentTrack(writer, track, scale, WriteGuitarNote);
             }
 
             foreach (var track in chart.VocalsTracks)
@@ -118,15 +118,29 @@ namespace YARG.Core.Song
                 WriteVocalsTrack(writer, track, scale);
             }
 
-            // Drums and pro-instruments follow the same shape but need their own note
-            // types (DrumNote, etc.) - left out of this first pass on purpose to keep
-            // the PR reviewable; same pattern applies.
+            foreach (var track in chart.DrumsTracks)
+            {
+                WriteInstrumentTrack(writer, track, scale, WriteDrumsNote);
+            }
+
+            WriteInstrumentTrack(writer, chart.EliteDrums, scale, WriteEliteDrumsNote);
+
+            foreach (var track in chart.ProGuitarTracks)
+            {
+                WriteInstrumentTrack(writer, track, scale, WriteProGuitarNote);
+            }
+
+            WriteInstrumentTrack(writer, chart.ProKeys, scale, WriteProKeysNote);
 
             return HashWrapper.Hash(stream.ToArray());
         }
 
-        private static void WriteGuitarTrack(BinaryWriter writer, Chart.InstrumentTrack<Chart.GuitarNote> track,
-            double scale)
+        // Every non-vocals instrument shares the same track shape: an optional
+        // per-difficulty note list. This is the one place that shape gets walked -
+        // each instrument only supplies how to write a single note via writeNote.
+        private static void WriteInstrumentTrack<TNote>(BinaryWriter writer, Chart.InstrumentTrack<TNote> track,
+            double scale, Action<BinaryWriter, TNote, double> writeNote)
+            where TNote : Chart.Note<TNote>
         {
             if (track.IsEmpty)
             {
@@ -147,20 +161,31 @@ namespace YARG.Core.Song
 
                 foreach (var note in diff.Notes)
                 {
-                    writer.Write((uint) Math.Round(note.Tick * scale));
-                    writer.Write((byte) note.NoteMask);
-                    writer.Write(NormalizeType(note.Type)); // strum / hopo / tap - see DIAGNOSTIC_IGNORE_STRUM_HOPO above
-
-                    uint sustain = (uint) Math.Round(note.TickLength * scale);
-
-                    // Round to the nearest bucket rather than flooring, so tolerance
-                    // is spread symmetrically (+/- half a grain) instead of only
-                    // below each multiple. Integer-only, no floating point: adding
-                    // half a grain before dividing is the standard round-half-up
-                    // trick and matches Math.Round's default MidpointRounding.
-                    writer.Write((sustain + SUSTAIN_QUANTIZE / 2) / SUSTAIN_QUANTIZE);
+                    writeNote(writer, note, scale);
                 }
             }
+        }
+
+        // Rounds to the nearest bucket rather than flooring, so tolerance is spread
+        // symmetrically (+/- half a grain) instead of only below each multiple.
+        // Integer-only, no floating point: adding half a grain before dividing is the
+        // standard round-half-up trick and matches Math.Round's default
+        // MidpointRounding. See SUSTAIN_QUANTIZE for how the grain size was picked.
+        // Shared by every note type with a meaningful sustain (guitar, vocals, pro
+        // guitar, pro keys) - drum-family notes don't call this, since their
+        // TickLength is always 0 by construction.
+        private static void WriteQuantizedSustain(BinaryWriter writer, uint tickLength, double scale)
+        {
+            uint sustain = (uint) Math.Round(tickLength * scale);
+            writer.Write((sustain + SUSTAIN_QUANTIZE / 2) / SUSTAIN_QUANTIZE);
+        }
+
+        private static void WriteGuitarNote(BinaryWriter writer, Chart.GuitarNote note, double scale)
+        {
+            writer.Write((uint) Math.Round(note.Tick * scale));
+            writer.Write((byte) note.NoteMask);
+            writer.Write(NormalizeType(note.Type)); // strum / hopo / tap - see DIAGNOSTIC_IGNORE_STRUM_HOPO above
+            WriteQuantizedSustain(writer, note.TickLength, scale);
         }
 
         private static void WriteVocalsTrack(BinaryWriter writer, Chart.VocalsTrack track, double scale)
@@ -177,35 +202,130 @@ namespace YARG.Core.Song
             // fixed, deterministic order without sorting by VocalNote.HarmonyPart.
             foreach (var part in track.Parts)
             {
-                if (part.IsEmpty)
+                // NOTE: deliberately NOT using VocalsPart.IsEmpty here - that check
+                // ignores StaticLyricPhrases entirely, and this method used to key its
+                // own skip logic off it too. That meant any part carrying only
+                // unpitched/static lyric data (no NotePhrases, no OtherPhrases, no
+                // TextEvents) got silently skipped, contributing zero bytes to the
+                // hash. For a song whose only content is a lyrics-only vocals chart -
+                // no five/six-fret tracks either - that leaves the entire stream
+                // empty, so every such song collapsed to the same hash. Skip only when
+                // there is truly nothing (of the two phrase lists this method writes)
+                // to write.
+                if (part.NotePhrases.Count == 0 && part.StaticLyricPhrases.Count == 0)
                 {
                     continue;
                 }
 
                 writer.Write(part.NotePhrases.Count);
-
                 foreach (var phrase in part.NotePhrases)
                 {
-                    var parent = phrase.PhraseParentNote;
+                    WriteVocalsPhrase(writer, phrase, scale);
+                }
 
-                    writer.Write((uint) Math.Round(parent.Tick * scale));
-                    writer.Write(parent.IsPercussionPhrase);
-                    writer.Write(parent.ChildNotes.Count);
-
-                    foreach (var note in parent.ChildNotes)
-                    {
-                        writer.Write((uint) Math.Round(note.Tick * scale));
-                        writer.Write(note.Type == Chart.VocalNoteType.Percussion);
-                        writer.Write(NormalizePitch(note.Pitch));
-
-                        uint length = (uint) Math.Round(note.TickLength * scale);
-                        // Same rounding-bucket trick as the guitar sustain quantization -
-                        // held-note lengths are just as prone to per-extractor tick
-                        // trimming as guitar sustains are.
-                        writer.Write((length + SUSTAIN_QUANTIZE / 2) / SUSTAIN_QUANTIZE);
-                    }
+                // Static lyric phrases (lyrics displayed without pitch tracking) carry
+                // no gameplay-relevant pitch data, but they're still real chart content
+                // that differs from song to song - has to be included or two different
+                // lyrics-only songs hash identically.
+                writer.Write(part.StaticLyricPhrases.Count);
+                foreach (var phrase in part.StaticLyricPhrases)
+                {
+                    WriteVocalsPhrase(writer, phrase, scale);
                 }
             }
+        }
+
+        private static void WriteVocalsPhrase(BinaryWriter writer, Chart.VocalsPhrase phrase, double scale)
+        {
+            var parent = phrase.PhraseParentNote;
+
+            writer.Write((uint) Math.Round(parent.Tick * scale));
+            writer.Write(parent.IsPercussionPhrase);
+            writer.Write(parent.ChildNotes.Count);
+
+            foreach (var note in parent.ChildNotes)
+            {
+                writer.Write((uint) Math.Round(note.Tick * scale));
+                writer.Write(note.Type == Chart.VocalNoteType.Percussion);
+                writer.Write(NormalizePitch(note.Pitch));
+                WriteQuantizedSustain(writer, note.TickLength, scale);
+            }
+        }
+
+        private static void WriteDrumsNote(BinaryWriter writer, Chart.DrumNote note, double scale)
+        {
+            writer.Write((uint) Math.Round(note.Tick * scale));
+            // Drum "chords" (e.g. snare+hihat hit together) are stored as
+            // ChildNotes rather than a NoteMask like guitar, since each
+            // component can carry its own dynamics/kick-lane flags - AllNotes
+            // walks the parent plus every child in a fixed order.
+            writer.Write(note.ChildNotes.Count + 1);
+
+            foreach (var n in note.AllNotes)
+            {
+                writer.Write((byte) n.Pad);
+                writer.Write((byte) n.Type); // Neutral / Ghost / Accent
+                writer.Write(n.IsDoubleKick);
+                // Only the kick-lane bits are gameplay-relevant here; StarPowerActivator
+                // is already implied by the phrase-level StarPower flags on other tracks.
+                writer.Write((byte) (n.DrumFlags &
+                    (Chart.DrumNoteFlags.KickLane | Chart.DrumNoteFlags.KickLaneStart |
+                        Chart.DrumNoteFlags.KickLaneEnd)));
+            }
+        }
+
+        private static void WriteEliteDrumsNote(BinaryWriter writer, Chart.EliteDrumNote note, double scale)
+        {
+            writer.Write((uint) Math.Round(note.Tick * scale));
+            writer.Write(note.ChildNotes.Count + 1);
+
+            foreach (var n in note.AllNotes)
+            {
+                writer.Write((byte) n.Pad);
+                writer.Write((byte) n.Dynamics);
+                writer.Write((byte) n.HatState);
+                writer.Write((byte) n.HatPedalType);
+                writer.Write(n.IsFlam);
+                writer.Write(n.IsDoubleKick);
+            }
+        }
+
+        private static void WriteProGuitarNote(BinaryWriter writer, Chart.ProGuitarNote note, double scale)
+        {
+            writer.Write((uint) Math.Round(note.Tick * scale));
+            // String+fret pairs are ChildNotes (unlike five-fret's single NoteMask),
+            // since each string in a chord needs its own fret number.
+            writer.Write(note.ChildNotes.Count + 1);
+
+            foreach (var n in note.AllNotes)
+            {
+                writer.Write((byte) n.String);
+                writer.Write((byte) n.Fret);
+                writer.Write(NormalizeProGuitarType(n.Type));
+                writer.Write(n.IsMuted);
+                WriteQuantizedSustain(writer, n.TickLength, scale);
+            }
+        }
+
+        private static void WriteProKeysNote(BinaryWriter writer, Chart.ProKeysNote note, double scale)
+        {
+            writer.Write((uint) Math.Round(note.Tick * scale));
+            writer.Write(note.NoteMask);
+            writer.Write(note.IsGlissando);
+            WriteQuantizedSustain(writer, note.TickLength, scale);
+        }
+
+        // Same strum/hopo collapse rationale as NormalizeType, applied to pro guitar's
+        // parallel enum - see DIAGNOSTIC_IGNORE_STRUM_HOPO above.
+        private static byte NormalizeProGuitarType(Chart.ProGuitarNoteType type)
+        {
+            if (DIAGNOSTIC_IGNORE_STRUM_HOPO &&
+                (type == Chart.ProGuitarNoteType.Strum || type == Chart.ProGuitarNoteType.Hopo))
+            {
+                return (byte) Chart.ProGuitarNoteType.Hopo;
+            }
+
+            return (byte) type;
         }
 
         // Pitch is a float, but every real chart stores whole MIDI note numbers (or -1
