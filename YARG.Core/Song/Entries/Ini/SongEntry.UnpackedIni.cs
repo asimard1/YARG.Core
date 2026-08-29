@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using YARG.Core.Song.Cache;
@@ -493,32 +493,6 @@ namespace YARG.Core.Song
             }
 
             return entry;
-        }
-
-        private static bool TryParseDTAModifiers(FileInfo dtaFile, out IniModifierCollection modifiers)
-        {
-            modifiers = new IniModifierCollection();
-            try
-            {
-                using var dtaBytes = FixedArray.LoadFile(dtaFile.FullName);
-                var container = YARGDTAReader.Create(dtaBytes);
-                if (!YARGDTAReader.StartNode(ref container))
-                {
-                    return false;
-                }
-
-                string name = YARGDTAReader.GetNameOfNode(ref container, true);
-                var dta = DTAEntry.Create(name, container);
-                YARGDTAReader.EndNode(ref container);
-
-                modifiers = DTAMetadataAdapter.BuildModifiers(dta);
-                return true;
-            }
-            catch (Exception e)
-            {
-                YargLogger.LogException(e, $"Error while parsing metadata dta {dtaFile.FullName}!");
-                return false;
-            }
         }
 
         private static bool TryParseDTAModifiers(FileInfo dtaFile, out IniModifierCollection modifiers)

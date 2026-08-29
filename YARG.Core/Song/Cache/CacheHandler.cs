@@ -933,7 +933,9 @@ namespace YARG.Core.Song.Cache
         {
             bool hasIni = collection.FindFile("song.ini", out var ini);
             // song.ini takes priority - only look for a fallback metadata dta when there's no ini
-            bool hasDta = !hasIni && collection.FindFile("song.dta", out var dta);
+            FileInfo dta = null;
+            bool hasDta = !hasIni && collection.FindFile("song.dta", out dta);
+
             int i = (hasIni || hasDta) ? 0 : 3;
             while (i < 4)
             {
@@ -955,7 +957,15 @@ namespace YARG.Core.Song.Cache
 
                 try
                 {
-                    var entry = UnpackedIniEntry.ProcessNewEntry(collection.Directory, chart, IniSubEntry.CHART_FILE_TYPES[i].Format, hasIni ? ini : null, hasDta ? dta : null, defaultPlaylist, iniUpdateInfos);
+                    var entry = UnpackedIniEntry.ProcessNewEntry(
+                        collection.Directory,
+                        chart,
+                        IniSubEntry.CHART_FILE_TYPES[i].Format,
+                        hasIni ? ini : null,
+                        hasDta ? dta : null,
+                        defaultPlaylist,
+                        iniUpdateInfos);
+
                     if (entry)
                     {
                         AddEntry(entry.Value);
