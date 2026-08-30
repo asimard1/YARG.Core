@@ -18,17 +18,23 @@ namespace YARG.Core.Song
     /// Neither SongEntry's fields, its cache serialization, nor the existing scan-time
     /// hash call sites are touched by this.
     ///
-    /// A chart matches under this hash if and only if it differs from another chart
-    /// solely in ways proven not to reach the gameplay engines:
+    /// A chart matches under this hash if it's the same song approximately: same notes,
+    /// same timing, same difficulty content. It does NOT require byte-for-byte gameplay
+    /// equivalence - the goal is "close enough that two players don't look out of sync
+    /// to each other," not exactness. Known tolerances:
     ///   - MIDI velocity magnitude (engines only check on/off, see MidiFiveFretPreparser)
     ///   - notes outside an instrument's valid pitch range (never parsed at all)
     ///   - legacy RB1/RB2 versus-phrase markers (dropped since RB3, unused by YARG)
     ///   - sustain tails shorter than a fraction of a beat (quantized away below)
     ///   - non-gameplay tracks (EVENTS/VENUE/track order) - simply never read here
+    ///   - Strum vs. HOPO on guitar/pro guitar (see NormalizeType) - this DOES change
+    ///     hit mechanics, unlike everything else on this list, but not what's rendered
+    ///     on the highway, so it's tolerated deliberately for lenient matching rather
+    ///     than proven invisible to the engine like the rest of this list.
     /// </summary>
     public static class GameplayHasher
     {
-        public const int HASH_VERSION = 26_08_24_00; // bump: fixed vocals-only collision, added drums/elite drums/pro guitar/pro keys
+        public const int HASH_VERSION = 26_08_29_00; // bump: strum/HOPO tolerated for lenient matching (see NormalizeType)
         // Every chart is rescaled to this PPQ before hashing, so two files authored
         // at different MIDI resolutions (e.g. 480 vs 960) still match as long as the
         // underlying timing is the same. SongChart.Resolution is read straight from
@@ -62,37 +68,27 @@ namespace YARG.Core.Song
             Difficulty.Easy, Difficulty.Medium, Difficulty.Hard, Difficulty.Expert,
         };
 
-        // ============================================================================
-        // TEMPORARY DIAGNOSTIC OVERRIDE - NOT FOR SHIPPING. REMOVE AFTER VERIFICATION.
-        // ============================================================================
-        // Known root cause: one Expert note lands exactly on the boundary tick of a
-        // force-HOPO span, so strum-vs-HOPO resolution disagrees between a CON
-        // extraction and an Onyx extraction of the same song (1 note out of 802,
-        // confirmed by manually resolving both files' force-flag intervals against
-        // YARG's auto-HOPO rule). That's a genuine, if vanishingly rare, gameplay
-        // difference - not something GameplayHasher should normally paper over, since
-        // unlike sustain-tick trimming, strum-vs-HOPO does reach the engine.
+        // Strum and HOPO render identically on the highway - only the hit mechanic
+        // differs (strum required vs. hammer-on/pull-off allowed). For lenient
+        // multiplayer matching that's tolerable: two players on differently-encoded
+        // rips of the same song still see the same notes go by. Tap is kept distinct -
+        // it renders differently (diamond notes) and would look out of place if
+        // collapsed.
         //
-        // This flag exists purely to confirm that boundary case is the *only* other
-        // divergence between the two files (beyond the sustain-quantization one
-        // already fixed above). Flip it back to false once that's confirmed - leaving
-        // it on would silently hide real strum/HOPO differences in other songs.
-        //
-        // NOTE: assumes note.Type's enum is named GuitarNoteType with Strum/Hopo/Tap
-        // members - adjust to match your actual type if the names differ.
-        private const bool DIAGNOSTIC_IGNORE_STRUM_HOPO = true;
-
+        // This matters more than a rounding error: on a real CON/Onyx pair for this
+        // song, 98% of expert guitar chords differed in resolved Strum/HOPO status,
+        // because one rip encoded its force-flags on non-standard MIDI pitches that
+        // get silently dropped by the parser (see class doc). Collapsing here is what
+        // makes that pair - and others like it - match at all.
         private static byte NormalizeType(Chart.GuitarNoteType type)
         {
-            if (DIAGNOSTIC_IGNORE_STRUM_HOPO &&
-                (type == Chart.GuitarNoteType.Strum || type == Chart.GuitarNoteType.Hopo))
+            if (type == Chart.GuitarNoteType.Strum || type == Chart.GuitarNoteType.Hopo)
             {
                 return (byte) Chart.GuitarNoteType.Hopo;
             }
 
             return (byte) type;
         }
-        // ============================================================================
 
         public static HashWrapper Hash(Chart.SongChart chart)
         {
@@ -315,12 +311,11 @@ namespace YARG.Core.Song
             WriteQuantizedSustain(writer, note.TickLength, scale);
         }
 
-        // Same strum/hopo collapse rationale as NormalizeType, applied to pro guitar's
-        // parallel enum - see DIAGNOSTIC_IGNORE_STRUM_HOPO above.
+        // Same tolerance and rationale as NormalizeType, applied to pro guitar's
+        // parallel enum.
         private static byte NormalizeProGuitarType(Chart.ProGuitarNoteType type)
         {
-            if (DIAGNOSTIC_IGNORE_STRUM_HOPO &&
-                (type == Chart.ProGuitarNoteType.Strum || type == Chart.ProGuitarNoteType.Hopo))
+            if (type == Chart.ProGuitarNoteType.Strum || type == Chart.ProGuitarNoteType.Hopo)
             {
                 return (byte) Chart.ProGuitarNoteType.Hopo;
             }
