@@ -628,7 +628,6 @@ namespace YARG.Core.Song
         private static void ParseDTA(RBCONEntry entry, in DTAEntry dta, ref string? location, ref float[]? volumes, ref float[]? pans, ref float[]? cores)
         {
             SongMetadata.FillFromDTA(ref entry._metadata, in dta);
-
             if (dta.YearAsNumber != null)
             {
                 entry._yearAsNumber = dta.YearAsNumber.Value;
