@@ -38,6 +38,7 @@ namespace YARG.Core.Song
             Year = DEFAULT_YEAR,
             YearSecondary = string.Empty,
             Playlist = string.Empty,
+            PackName = string.Empty,
             IsMaster = true,
             VideoLoop = false,
             AlbumTrack = int.MaxValue,
@@ -107,6 +108,7 @@ namespace YARG.Core.Song
         public string Charter;
         public string Source;
         public string Playlist;
+        public string PackName;
         public string Year;
         public string YearSecondary;
 
@@ -214,7 +216,7 @@ namespace YARG.Core.Song
                 metadata.CharterProBass   = YARGDTAReader.DecodeString(dta.CharterProStrings.Value, dta.MetadataEncoding);
             }
             if (dta.LoadingPhrase != null)        { metadata.LoadingPhrase = YARGDTAReader.DecodeString(dta.LoadingPhrase.Value, dta.MetadataEncoding); }
-            if (dta.Playlist != null)             { metadata.Playlist      = YARGDTAReader.DecodeString(dta.Playlist.Value, dta.MetadataEncoding); }
+            if (dta.PackName != null)             { metadata.PackName = YARGDTAReader.DecodeString(dta.PackName.Value, dta.MetadataEncoding); }
             if (dta.Genre != null)
             {
                 metadata.Genre    = dta.Genre;

@@ -75,7 +75,7 @@ namespace YARG.Core.Song
                 modifiers.SetString("charter_pro_bass", metadata.CharterProBass);
             }
             if (dta.LoadingPhrase != null)     { modifiers.SetString("loading_phrase", metadata.LoadingPhrase); }
-            if (dta.Playlist != null)          { modifiers.SetString("playlist", metadata.Playlist); }
+            if (dta.PackName != null)          { modifiers.SetString("packname", metadata.PackName); }
             if (dta.Genre != null)             { modifiers.SetString("genre", metadata.Genre); }
             if (dta.Subgenre != null)          { modifiers.SetString("sub_genre", metadata.Subgenre); }
             // "icon" is the ini's name for what the DTA calls "source" (game_origin)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -37,7 +37,7 @@ namespace YARG.Core.Song.Cache
             if (dta.Album != null)         { metadata.Album         = YARGDTAReader.DecodeString(dta.Album.Value, dta.MetadataEncoding); }
             if (dta.Charter != null)       { metadata.Charter       = YARGDTAReader.DecodeString(dta.Charter.Value, dta.MetadataEncoding); }
             if (dta.LoadingPhrase != null) { metadata.LoadingPhrase = YARGDTAReader.DecodeString(dta.LoadingPhrase.Value, dta.MetadataEncoding); }
-            if (dta.Playlist != null)      { metadata.Playlist      = YARGDTAReader.DecodeString(dta.Playlist.Value, dta.MetadataEncoding); }
+            if (dta.PackName != null)      { metadata.PackName      = YARGDTAReader.DecodeString(dta.PackName.Value, dta.MetadataEncoding); }
 
             if (dta.Genre != null)
             {
