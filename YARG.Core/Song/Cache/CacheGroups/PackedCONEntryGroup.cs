@@ -58,6 +58,7 @@ namespace YARG.Core.Song.Cache
                 group = new PackedCONEntryGroup(listings, in root, defaultPlaylist);
                 using var data = CONFileStream.LoadFile(stream, listing);
                 var container = YARGDTAReader.Create(data);
+                YARGDTAReader.SkipWhitespace(ref container);
                 while (YARGDTAReader.StartNode(ref container))
                 {
                     string name = YARGDTAReader.GetNameOfNode(ref container, true);
@@ -71,6 +72,10 @@ namespace YARG.Core.Song.Cache
                     YARGDTAReader.EndNode(ref container);
                 }
                 group._data = data.TransferOwnership();
+                if (group._nodes.Count == 0)
+                {
+                    YargLogger.LogWarning($"[ScanDiag] No DTA nodes found in {root.FullName}, songs.dta length={data.Length}");
+                }
             }
             return group != null;
         }

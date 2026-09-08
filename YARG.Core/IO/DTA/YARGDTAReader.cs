@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using YARG.Core.Extensions;
+using YARG.Core.Logging;
 
 namespace YARG.Core.IO
 {
@@ -31,15 +32,16 @@ namespace YARG.Core.IO
             while (!container.IsAtEnd())
             {
                 int ch = container.Get();
-                if (ch > 32 && ch != ';')
+                if (ch > 32 && ch != ';' && ch != '#')
                 {
                     return ch;
                 }
 
                 ++container.Position;
-                if (ch == ';')
+                if (ch == ';' || ch == '#')
                 {
-                    // In comment
+                    // Comment or preprocessor directive line (e.g. #ifndef TITLEID_ROCK_BAND_3) —
+                    // YARG doesn't implement conditional compilation, treat both as line-skippable.
                     while (!container.IsAtEnd() && ch != '\n')
                     {
                         ch = container.Get();
@@ -382,6 +384,7 @@ namespace YARG.Core.IO
             int scopeLevel = 0;
             int squirlyCount = 0;
             var textState = TextScopeState.None;
+            bool atTokenStart = true;
             while (!container.IsAtEnd() && scopeLevel >= 0)
             {
                 int curr = container.Get();
@@ -419,7 +422,7 @@ namespace YARG.Core.IO
                     switch (textState)
                     {
                         case TextScopeState.Apostrophes:
-                            throw new Exception("Invalid quotation mark found!");
+                            break;
                         case TextScopeState.None:
                             textState = TextScopeState.Quotes;
                             break;
@@ -434,7 +437,12 @@ namespace YARG.Core.IO
                     {
                         case '(': ++scopeLevel; break;
                         case ')': --scopeLevel; break;
-                        case '\'': textState = TextScopeState.Apostrophes; break;
+                        case '\'':
+                            if (atTokenStart)
+                            {
+                                textState = TextScopeState.Apostrophes;
+                            }
+                            break;
                         case ';': textState = TextScopeState.Comment; break;
                     }
                 }
@@ -442,6 +450,8 @@ namespace YARG.Core.IO
                 {
                     textState = TextScopeState.None;
                 }
+
+                atTokenStart = curr is ' ' or '\t' or '\n' or '\r' or '(' or ')';
             }
             SkipWhitespace(ref container);
         }
