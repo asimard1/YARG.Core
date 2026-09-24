@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using YARG.Core.Chart.Events;
 using YARG.Core.IO;
+using YARG.Core.Logging;
 using YARG.Core.Song;
 using MiloAnimationEvent = YARG.Core.IO.MiloAnimation.MiloAnimationEvent;
 using MiloAnimationType = YARG.Core.IO.MiloAnimation.MiloAnimationType;
@@ -15,14 +16,16 @@ namespace YARG.Core.Chart
     /// </summary>
     public class MiloVenue
     {
-        public List<CharacterState>         CharacterStates      { get; } = new();
-        public List<CameraCutEvent>         CameraCuts           { get; } = new();
-        public List<CrowdEvent>             CrowdEvents          { get; } = new();
-        public List<PostProcessingEvent>    PostProcessingEvents { get; } = new();
-        public List<LightingEvent>          LightingEvents       { get; } = new();
-        public List<StageEffectEvent>       StageEvents          { get; } = new();
-        public List<PerformerEvent>         PerformerEvents      { get; } = new();
-        public List<LipsyncEvent>           LipsyncEvents        { get; } = new();
+        public List<CharacterState> CharacterStates { get; } = new();
+        public List<CameraCutEvent> CameraCuts { get; } = new();
+        public List<CrowdEvent> CrowdEvents { get; } = new();
+        public List<PostProcessingEvent> PostProcessingEvents { get; } = new();
+        public List<LightingEvent> LightingEvents { get; } = new();
+        public List<StageEffectEvent> StageEvents { get; } = new();
+        public List<PerformerEvent> PerformerEvents { get; } = new();
+        public List<List<LipsyncEvent>> LipsyncEventsByPart { get; } = new();
+        public Performer[] SingerPreference { get; private set; } = Array.Empty<Performer>();
+        public MiloAnimation.MiloAnimationGenre AnimationGenre { get; private set; } = MiloAnimation.MiloAnimationGenre.Rock;
 
         private List<MiloAnimationEvent> _rawEvents = new();
 
@@ -30,7 +33,7 @@ namespace YARG.Core.Chart
         private readonly SongEntry _song;
 
         private int                          _rawEventIndex;
-        private List<MiloLipsync.VisemeData> _lipsyncData = new();
+        private List<MiloLipsync.VisemeData>[] _lipsyncData = Array.Empty<List<MiloLipsync.VisemeData>>();
 
         public MiloVenue(SongChart chart, SongEntry song)
         {
@@ -47,12 +50,13 @@ namespace YARG.Core.Chart
                 using (var miloReader = new MiloAnimation(miloData))
                 {
                     _rawEvents = miloReader.GetMiloAnimation();
+                    AnimationGenre = miloReader.GetAnimationGenre();
                 }
 
                 using(var lipsyncReader = new MiloLipsync(miloData))
                 {
                     _lipsyncData = lipsyncReader.GetLipsyncData();
-
+                    SingerPreference = lipsyncReader.GetSingerPreferenceFromMilo();
                 }
             }
             else
@@ -104,6 +108,8 @@ namespace YARG.Core.Chart
                 }
             }
 
+            HandleSingalongsFromLipsync();
+
             // Sort all the lists
             CameraCuts.Sort((a, b) => a.Time.CompareTo(b.Time));
             CrowdEvents.Sort((a, b) => a.Time.CompareTo(b.Time));
@@ -114,7 +120,10 @@ namespace YARG.Core.Chart
 
             // Deal with lipsync now
             HandleLipsync();
-            LipsyncEvents.Sort((a, b) => a.Time.CompareTo(b.Time));
+            foreach (var harmonyLipsync in LipsyncEventsByPart)
+            {
+                harmonyLipsync.Sort((a, b) => a.Time.CompareTo(b.Time));
+            }
         }
 
         private void HandleStage()
@@ -286,18 +295,102 @@ namespace YARG.Core.Chart
 
         private void HandleLipsync()
         {
-            foreach (var viseme in _lipsyncData)
+            for (int i = 0; i < _lipsyncData.Length; i++)
             {
-                // Scale 0-255 int to 0.0-1.0 float
-                var value = viseme.Value / 255.0f;
-                var time = viseme.StartTime;
-
-                if (VisemeLookup.TryGetValue(viseme.Viseme, out var lipsyncType))
+                var lipsyncData = _lipsyncData[i];
+                var events = new List<LipsyncEvent>();
+                foreach (var viseme in lipsyncData)
                 {
-                    LipsyncEvents.Add(new LipsyncEvent(lipsyncType, value, time,
-                        _chart.SyncTrack.TimeToTick(time)));
+                    // Scale 0-255 int to 0.0-1.0 float
+                    var value = viseme.Value / 255.0f;
+                    var time = viseme.StartTime;
+
+                    if (VisemeLookup.TryGetValue(viseme.Viseme, out var lipsyncType))
+                    {
+                        events.Add(new LipsyncEvent(lipsyncType, value, time,
+                            _chart.SyncTrack.TimeToTick(time)));
+                    }
+                }
+                LipsyncEventsByPart.Add(events);
+            }
+        }
+
+        private void HandleSingalongsFromLipsync()
+        {
+            var singalongEvents = new List<PerformerEvent>();
+            Dictionary<Visemes, double?> visemeGroupStartTime = new()
+            {
+                { Visemes.bass_singalong, null },
+                { Visemes.drum_singalong, null },
+                { Visemes.guitar_singalong, null },
+                { Visemes.singalong, null }
+            };
+            foreach (var partData in _lipsyncData)
+            {
+                foreach (var frame in partData)
+                {
+                    if (frame.Viseme is not (Visemes.bass_singalong or Visemes.drum_singalong
+                        or Visemes.guitar_singalong or Visemes.singalong))
+                    {
+                        continue;
+                    }
+
+                    if (frame.Value > 0 && !visemeGroupStartTime[frame.Viseme].HasValue)
+                    {
+                        visemeGroupStartTime[frame.Viseme] = frame.StartTime;
+                    }
+                    else if (frame.Value == 0)
+                    {
+                        // Group has ended, add a singalong event if we have a start time
+                        if (visemeGroupStartTime.TryGetValue(frame.Viseme, out var startTime) && startTime.HasValue)
+                        {
+                            // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
+                            var performers = frame.Viseme switch
+                            {
+                                Visemes.bass_singalong   => Performer.Bass,
+                                Visemes.drum_singalong   => Performer.Drums,
+                                Visemes.guitar_singalong => Performer.Guitar,
+                                // Keys excluded since in RB it replaces one of these instruments, and vocals does not do singalongs.
+                                Visemes.singalong        => Performer.Bass | Performer.Drums | Performer.Guitar,
+                                _                        => throw new Exception("Unreachable.")
+                            };
+                            var startTick = _chart.SyncTrack.TimeToTick(startTime.Value);
+                            var tickLength = _chart.SyncTrack.TimeToTick(frame.StartTime - startTime.Value);
+                            if (singalongEvents.Count > 0 && singalongEvents[^1].Tick == startTick && singalongEvents[^1].TickLength == tickLength)
+                            {
+                                // Merge with previous event
+                                var lastEvent = singalongEvents[^1];
+                                singalongEvents[^1] = new PerformerEvent(PerformerEventType.Singalong,
+                                    lastEvent.Performers | performers, lastEvent.Time, lastEvent.TimeLength,
+                                    lastEvent.Tick, lastEvent.TickLength);
+                            }
+                            else
+                            {
+                                singalongEvents.Add(new PerformerEvent(PerformerEventType.Singalong, performers,
+                                    startTime.Value, frame.StartTime - startTime.Value,
+                                    _chart.SyncTrack.TimeToTick(startTime.Value),
+                                    _chart.SyncTrack.TimeToTick(frame.StartTime - startTime.Value)));
+                            }
+                        }
+                        visemeGroupStartTime[frame.Viseme] = null;
+                    }
                 }
             }
+            singalongEvents.Sort((a, b) => a.Tick.CompareTo(b.Tick));
+            // Merge same-tick events
+            for (var i = singalongEvents.Count - 1; i > 0; i--)
+            {
+                var a = singalongEvents[i];
+                var b = singalongEvents[i - 1];
+                if (a.Tick == b.Tick && a.TickLength == b.TickLength)
+                {
+                    singalongEvents[i - 1] = new PerformerEvent(PerformerEventType.Singalong, a.Performers | b.Performers,
+                        b.Time, b.TimeLength, b.Tick, b.TickLength);
+                    singalongEvents.RemoveAt(i);
+                }
+            }
+
+            PerformerEvents.AddRange(singalongEvents);
         }
 
         private static readonly Dictionary<MiloAnimationType, Performer> PerformerLookup = new()
@@ -324,7 +417,7 @@ namespace YARG.Core.Chart
             { MiloAnimationType.SpotKeyboard, PerformerEventType.Spotlight }
         };
 
-        private static readonly Dictionary<Visemes, LipsyncType> VisemeLookup = new()
+        public static readonly Dictionary<Visemes, LipsyncType> VisemeLookup = new()
         {
                 // Actual visemes
                 { Visemes.Bump_hi, LipsyncType.Bump_hi },
