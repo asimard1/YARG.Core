@@ -1,22 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using YARG.Core.Audio;
-using YARG.Core.Extensions;
 using YARG.Core.IO;
 
 namespace YARG.Core.Song.Cache
 {
     /// <summary>
     /// Everything found in a shortname's songs_updates/&lt;shortname&gt; folder that can be applied
-    /// to an ini-format song: the update midi (already supported), plus the update mogg, album art,
-    /// and whatever DTA-declared audio channel/panning info exists for that shortname.
+    /// to an ini-format song: the update midi, album art, and
+    /// whatever DTA-declared metadata exists for that shortname.
     /// </summary>
     internal struct IniUpdateInfo
     {
         public string? MidiPath;
-        public string? MoggPath;
         public string? ImagePath;
         public DTAEntry Dta;
     }
@@ -62,72 +55,6 @@ namespace YARG.Core.Song.Cache
             if (dta.Preview != null)     { metadata.Preview     = dta.Preview.Value; }
             if (dta.SongRating != null)  { metadata.SongRating  = dta.SongRating.Value; }
             if (dta.VocalGender != null) { metadata.VocalGender = DTAEntry.ConvertVocalGender(dta.VocalGender); }
-        }
-    }
-
-    /// <summary>
-    /// Local (de)serialization of RBAudio&lt;T&gt; for ini cache entries — a copy of the same
-    /// read/write pattern RBCONEntry uses for its own cache entries, kept local so this doesn't
-    /// require touching SongEntry.RBCON.cs's private helpers.
-    /// </summary>
-    internal static class IniAudioSerializer
-    {
-        public static void WriteArray<TType>(in TType[] values, MemoryStream stream)
-            where TType : unmanaged
-        {
-            stream.Write(values.Length, Endianness.Little);
-            unsafe
-            {
-                fixed (TType* ptr = values)
-                {
-                    var span = new ReadOnlySpan<byte>(ptr, values.Length * sizeof(TType));
-                    stream.Write(span);
-                }
-            }
-        }
-
-        public static TType[] ReadArray<TType>(ref FixedArrayStream stream)
-            where TType : unmanaged
-        {
-            int length = stream.Read<int>(Endianness.Little);
-            if (length == 0)
-            {
-                return Array.Empty<TType>();
-            }
-
-            var values = new TType[length];
-            unsafe
-            {
-                fixed (TType* ptr = values)
-                {
-                    stream.Read(ptr, values.Length * sizeof(TType));
-                }
-            }
-            return values;
-        }
-
-        public static void WriteAudio<TType>(in RBAudio<TType> audio, MemoryStream stream)
-            where TType : unmanaged
-        {
-            WriteArray(in audio.Track, stream);
-            WriteArray(in audio.Drums, stream);
-            WriteArray(in audio.Bass, stream);
-            WriteArray(in audio.Guitar, stream);
-            WriteArray(in audio.Keys, stream);
-            WriteArray(in audio.Vocals, stream);
-            WriteArray(in audio.Crowd, stream);
-        }
-
-        public static void ReadAudio<TType>(ref RBAudio<TType> audio, ref FixedArrayStream stream)
-            where TType : unmanaged
-        {
-            audio.Track  = ReadArray<TType>(ref stream);
-            audio.Drums  = ReadArray<TType>(ref stream);
-            audio.Bass   = ReadArray<TType>(ref stream);
-            audio.Guitar = ReadArray<TType>(ref stream);
-            audio.Keys   = ReadArray<TType>(ref stream);
-            audio.Vocals = ReadArray<TType>(ref stream);
-            audio.Crowd  = ReadArray<TType>(ref stream);
         }
     }
 }

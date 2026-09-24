@@ -35,7 +35,7 @@ namespace YARG.Core.Song.Cache
         /// if multiple cache version changes happen in a single day).
         /// </summary>
         /// <remarks>Change whenever the song cache needs to be cleared and regenerated, e.g. when the new data is added to the cache.</remarks>
-        private const int CACHE_VERSION = 26_08_12_00;
+        private const int CACHE_VERSION = 26_09_23_00;
 
         public static ScanProgressTracker Progress => _progress;
         private static ScanProgressTracker _progress;
@@ -344,7 +344,6 @@ namespace YARG.Core.Song.Cache
             }
             return mods;
         }
-
 
         private void PreScanUpdateMidis()
         {
@@ -774,7 +773,10 @@ namespace YARG.Core.Song.Cache
                         var dta = new FileInfo(Path.Combine(directory.FullName, RBCONEntry.SONGUPDATES_DTA));
                         if (dta.Exists && CONUpdateGroup.Create(directory.FullName, dta, out var updateGroup))
                         {
-                            lock (updateGroups) { updateGroups.Add(updateGroup); }
+                            lock (updateGroups)
+                            {
+                                updateGroups.Add(updateGroup);
+                            }
                             // Ensures any con entries pulled from cache are removed for re-evaluation
                             RemoveCONEntries(updateGroup!.Updates);
                         }
