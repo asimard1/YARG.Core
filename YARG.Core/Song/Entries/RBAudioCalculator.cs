@@ -29,11 +29,6 @@ namespace YARG.Core.Song
                     for (int i = 0; i < stemIndices.Length; i++)
                     {
                         int index = stemIndices[i];
-                        if (index < 0 || index >= pans.Length || index >= volumes.Length)
-                        {
-                            continue;
-                        }
-
                         float theta = (pans[index] + 1) * ((float) Math.PI / 4);
                         float volRatio = (float) Math.Pow(10, volumes[index] / 20);
                         values[2 * i] = volRatio * (float) Math.Cos(theta);

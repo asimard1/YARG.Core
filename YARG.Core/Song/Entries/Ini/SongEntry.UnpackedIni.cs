@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using YARG.Core.Song.Cache;
@@ -15,6 +15,7 @@ namespace YARG.Core.Song
     internal sealed class UnpackedIniEntry : IniSubEntry
     {
         private readonly DateTime? _iniLastWrite;
+        private readonly AbridgedFileInfo? _dtaFile; // Fallback metadata dta used when there's no song.ini. FullName is relative to the song folder
 
         public override EntryType SubType => EntryType.Ini;
 
@@ -26,6 +27,12 @@ namespace YARG.Core.Song
             if (_iniLastWrite.HasValue)
             {
                 stream.Write(_iniLastWrite.Value.ToBinary(), Endianness.Little);
+            }
+
+            stream.Write(_dtaFile.HasValue);
+            if (_dtaFile.HasValue)
+            {
+                _dtaFile.Value.Serialize(stream);
             }
             base.Serialize(stream, node);
         }
@@ -366,32 +373,35 @@ namespace YARG.Core.Song
             return files;
         }
 
-        private UnpackedIniEntry(string directory, in DateTime chartLastWrite, in DateTime? iniLastWrite, in ChartFormat format)
+        private UnpackedIniEntry(string directory, in DateTime chartLastWrite, in DateTime? iniLastWrite, AbridgedFileInfo? dtaFile, in ChartFormat format)
             : base(directory, in chartLastWrite, format)
         {
             _iniLastWrite = iniLastWrite;
+            _dtaFile = dtaFile;
         }
 
         public static ScanExpected<UnpackedIniEntry> ProcessNewEntry(string directory, FileInfo chartInfo, ChartFormat format, FileInfo? iniFile, FileInfo? dtaFile, string defaultPlaylist)
         {
             IniModifierCollection iniModifiers;
             DateTime? iniLastWrite = default;
+            AbridgedFileInfo? dtaInfo = default;
             if (iniFile != null)
             {
                 iniModifiers = SongIniHandler.ReadSongIniFile(iniFile.FullName);
                 iniLastWrite = AbridgedFileInfo.NormalizedLastWrite(iniFile);
             }
             // No song.ini - fall back to a raw metadata dta (e.g. extracted straight from a CON pack)
-            else if (dtaFile != null && TryParseDTAModifiers(dtaFile, out var dtaModifiers))
+            else if (dtaFile != null)
             {
-                iniModifiers = dtaModifiers;
+                TryParseDTAModifiers(dtaFile, out iniModifiers);
+                dtaInfo = new AbridgedFileInfo(dtaFile.Name, AbridgedFileInfo.NormalizedLastWrite(dtaFile));
             }
             else
             {
                 iniModifiers = new();
             }
 
-            var entry = new UnpackedIniEntry(directory, AbridgedFileInfo.NormalizedLastWrite(chartInfo), in iniLastWrite, format);
+            var entry = new UnpackedIniEntry(directory, AbridgedFileInfo.NormalizedLastWrite(chartInfo), in iniLastWrite, dtaInfo, format);
             entry._metadata.Playlist = defaultPlaylist;
 
             using var file = FixedArray.LoadFile(chartInfo.FullName);
@@ -451,7 +461,21 @@ namespace YARG.Core.Song
                 return null;
             }
 
-            var entry = new UnpackedIniEntry(directory, in chartLastWrite, in iniLastWrite, chart.Format);
+            AbridgedFileInfo? dtaFile = default;
+            if (stream.ReadBoolean())
+            {
+                dtaFile = new AbridgedFileInfo(ref stream);
+                if (!AbridgedFileInfo.Validate(Path.Combine(directory, dtaFile.Value.FullName), dtaFile.Value.LastWriteTime))
+                {
+                    return null;
+                }
+            }
+            else if (!iniLastWrite.HasValue && Directory.EnumerateFiles(directory).Any(file => file.EndsWith(".dta", StringComparison.OrdinalIgnoreCase)))
+            {
+                return null; // A metadata dta showed up since this entry was cached
+            }
+
+            var entry = new UnpackedIniEntry(directory, in chartLastWrite, in iniLastWrite, dtaFile, chart.Format);
             entry.Deserialize(ref stream, strings);
             return entry;
         }
@@ -462,7 +486,8 @@ namespace YARG.Core.Song
             ref readonly var chart = ref CHART_FILE_TYPES[stream.ReadByte()];
             var chartLastWrite = DateTime.FromBinary(stream.Read<long>(Endianness.Little));
             DateTime? iniLastWrite = stream.ReadBoolean() ? DateTime.FromBinary(stream.Read<long>(Endianness.Little)) : default;
-            var entry = new UnpackedIniEntry(directory, in chartLastWrite, in iniLastWrite, chart.Format);
+            AbridgedFileInfo? dtaFile = stream.ReadBoolean() ? new AbridgedFileInfo(ref stream) : default;
+            var entry = new UnpackedIniEntry(directory, in chartLastWrite, in iniLastWrite, dtaFile, chart.Format);
             entry.Deserialize(ref stream, strings);
             return entry;
         }
