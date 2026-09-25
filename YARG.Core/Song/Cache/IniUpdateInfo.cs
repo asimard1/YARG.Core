@@ -10,8 +10,8 @@ namespace YARG.Core.Song.Cache
 {
     /// <summary>
     /// Everything found in a shortname's songs_updates/&lt;shortname&gt; folder that can be applied
-    /// to an ini-format song: the update midi (already supported), plus the update mogg, album art,
-    /// and whatever DTA-declared audio channel/panning info exists for that shortname.
+    /// to an ini-format song: the update midi, album art, and
+    /// whatever DTA-declared metadata exists for that shortname.
     /// </summary>
     internal struct IniUpdateInfo
     {
@@ -65,11 +65,6 @@ namespace YARG.Core.Song.Cache
         }
     }
 
-    /// <summary>
-    /// Local (de)serialization of RBAudio&lt;T&gt; for ini cache entries — a copy of the same
-    /// read/write pattern RBCONEntry uses for its own cache entries, kept local so this doesn't
-    /// require touching SongEntry.RBCON.cs's private helpers.
-    /// </summary>
     internal static class IniAudioSerializer
     {
         public static void WriteArray<TType>(in TType[] values, MemoryStream stream)
@@ -121,13 +116,13 @@ namespace YARG.Core.Song.Cache
         public static void ReadAudio<TType>(ref RBAudio<TType> audio, ref FixedArrayStream stream)
             where TType : unmanaged
         {
-            audio.Track  = ReadArray<TType>(ref stream);
-            audio.Drums  = ReadArray<TType>(ref stream);
-            audio.Bass   = ReadArray<TType>(ref stream);
+            audio.Track = ReadArray<TType>(ref stream);
+            audio.Drums = ReadArray<TType>(ref stream);
+            audio.Bass = ReadArray<TType>(ref stream);
             audio.Guitar = ReadArray<TType>(ref stream);
-            audio.Keys   = ReadArray<TType>(ref stream);
+            audio.Keys = ReadArray<TType>(ref stream);
             audio.Vocals = ReadArray<TType>(ref stream);
-            audio.Crowd  = ReadArray<TType>(ref stream);
+            audio.Crowd = ReadArray<TType>(ref stream);
         }
     }
 }

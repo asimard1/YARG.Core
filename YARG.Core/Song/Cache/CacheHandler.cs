@@ -350,7 +350,6 @@ namespace YARG.Core.Song.Cache
             return mods;
         }
 
-
         private void PreScanUpdateMidis()
         {
             Parallel.ForEach(iniGroups, group =>
@@ -795,7 +794,10 @@ namespace YARG.Core.Song.Cache
                         var dta = new FileInfo(Path.Combine(directory.FullName, RBCONEntry.SONGUPDATES_DTA));
                         if (dta.Exists && CONUpdateGroup.Create(directory.FullName, dta, out var updateGroup))
                         {
-                            lock (updateGroups) { updateGroups.Add(updateGroup); }
+                            lock (updateGroups)
+                            {
+                                updateGroups.Add(updateGroup);
+                            }
                             // Ensures any con entries pulled from cache are removed for re-evaluation
                             RemoveCONEntries(updateGroup!.Updates);
                         }

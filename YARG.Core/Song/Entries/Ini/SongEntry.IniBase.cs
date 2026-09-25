@@ -429,6 +429,7 @@ namespace YARG.Core.Song
         {
             if (drumsType != DrumsType.FiveLane && (!modifiers.Extract("pro_drums", out bool proDrums) || proDrums))
             {
+                // .mid's default state when the value isn't provided is ProDrums, differing with .chart
                 drumsType |= DrumsType.ProDrums;
                 drumsType &= ~DrumsType.FourLane;
             }
