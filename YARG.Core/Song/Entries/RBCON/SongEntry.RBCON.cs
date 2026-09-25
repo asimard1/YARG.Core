@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -249,16 +249,16 @@ namespace YARG.Core.Song
         }
 
 
-        private static readonly int[] BandDiffMap = { 163, 215, 243, 267, 292, 345 };
-        private static readonly int[] GuitarDiffMap = { 139, 176, 221, 267, 333, 409 };
+        internal static readonly int[] BandDiffMap = { 163, 215, 243, 267, 292, 345 };
+        internal static readonly int[] GuitarDiffMap = { 139, 176, 221, 267, 333, 409 };
         private static readonly int[] BassDiffMap = { 135, 181, 228, 293, 364, 436 };
-        private static readonly int[] DrumDiffMap = { 124, 151, 178, 242, 345, 448 };
+        internal static readonly int[] DrumDiffMap = { 124, 151, 178, 242, 345, 448 };
         private static readonly int[] KeysDiffMap = { 153, 211, 269, 327, 385, 443 };
         private static readonly int[] VocalsDiffMap = { 132, 175, 218, 279, 353, 427 };
-        private static readonly int[] RealGuitarDiffMap = { 150, 205, 264, 323, 382, 442 };
+        internal static readonly int[] RealGuitarDiffMap = { 150, 205, 264, 323, 382, 442 };
         private static readonly int[] RealBassDiffMap = { 150, 208, 267, 325, 384, 442 };
         private static readonly int[] RealDrumsDiffMap = { 124, 151, 178, 242, 345, 448 };
-        private static readonly int[] RealKeysDiffMap = { 153, 211, 269, 327, 385, 443 };
+        internal static readonly int[] RealKeysDiffMap = { 153, 211, 269, 327, 385, 443 };
         private static readonly int[] HarmonyDiffMap = { 132, 175, 218, 279, 353, 427 };
         private protected static ScanExpected<string> ProcessDTAs(RBCONEntry entry, in DTAEntry baseDTA, in DTAEntry updateDTA, in DTAEntry upgradeDTA)
         {
@@ -711,7 +711,7 @@ namespace YARG.Core.Song
             }
         }
 
-        private static int GetIntensity(int rank, int[] values)
+        internal static int GetIntensity(int rank, int[] values)
         {
             int intensity = 0;
             while (intensity < 6 && values[intensity] <= rank)

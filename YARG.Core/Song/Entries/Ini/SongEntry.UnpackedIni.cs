@@ -23,6 +23,7 @@ namespace YARG.Core.Song
         private readonly string? _updateImagePath;
         private RBAudio<int> _indices = RBAudio<int>.Empty;
         private RBAudio<float> _panning = RBAudio<float>.Empty;
+        private readonly AbridgedFileInfo? _dtaFile; // Fallback metadata dta used when there's no song.ini. FullName is relative to the song folder
 
         public override EntryType SubType => EntryType.Ini;
 
@@ -63,6 +64,11 @@ namespace YARG.Core.Song
             IniAudioSerializer.WriteAudio(in _indices, stream);
             IniAudioSerializer.WriteAudio(in _panning, stream);
 
+            stream.Write(_dtaFile.HasValue);
+            if (_dtaFile.HasValue)
+            {
+                _dtaFile.Value.Serialize(stream);
+            }
             base.Serialize(stream, node);
         }
 
@@ -435,7 +441,8 @@ namespace YARG.Core.Song
         }
 
         private UnpackedIniEntry(string directory, in DateTime chartLastWrite, in DateTime? iniLastWrite, in ChartFormat format,
-            string? shortname, string? updateMidiPath, string? updateMoggPath, string? updateImagePath)
+            string? shortname, string? updateMidiPath, string? updateMoggPath, string? updateImagePath,
+            AbridgedFileInfo? dtaFile)
             : base(directory, in chartLastWrite, format)
         {
             _iniLastWrite = iniLastWrite;
@@ -443,21 +450,24 @@ namespace YARG.Core.Song
             _updateMidiPath = updateMidiPath;
             _updateMoggPath = updateMoggPath;
             _updateImagePath = updateImagePath;
+            _dtaFile = dtaFile;
         }
 
         public static ScanExpected<UnpackedIniEntry> ProcessNewEntry(string directory, FileInfo chartInfo, ChartFormat format, FileInfo? iniFile, FileInfo? dtaFile, string defaultPlaylist, IReadOnlyDictionary<string, IniUpdateInfo> iniUpdateInfos)
         {
             IniModifierCollection iniModifiers;
             DateTime? iniLastWrite = default;
+            AbridgedFileInfo? dtaInfo = default;
             if (iniFile != null)
             {
                 iniModifiers = SongIniHandler.ReadSongIniFile(iniFile.FullName);
                 iniLastWrite = AbridgedFileInfo.NormalizedLastWrite(iniFile);
             }
             // No song.ini - fall back to a raw metadata dta (e.g. extracted straight from a CON pack)
-            else if (dtaFile != null && TryParseDTAModifiers(dtaFile, out var dtaModifiers))
+            else if (dtaFile != null)
             {
-                iniModifiers = dtaModifiers;
+                TryParseDTAModifiers(dtaFile, out iniModifiers);
+                dtaInfo = new AbridgedFileInfo(dtaFile.Name, AbridgedFileInfo.NormalizedLastWrite(dtaFile));
             }
             else
             {
@@ -481,7 +491,7 @@ namespace YARG.Core.Song
             }
 
             var entry = new UnpackedIniEntry(directory, AbridgedFileInfo.NormalizedLastWrite(chartInfo), in iniLastWrite, format,
-                shortname, updateMidiPath, updateMoggPath, updateImagePath)
+                shortname, updateMidiPath, updateMoggPath, updateImagePath, dtaInfo)
             {
                 _indices = indices,
                 _panning = panning,
@@ -584,7 +594,22 @@ namespace YARG.Core.Song
             IniAudioSerializer.ReadAudio(ref indices, ref stream);
             IniAudioSerializer.ReadAudio(ref panning, ref stream);
 
-            var entry = new UnpackedIniEntry(directory, in chartLastWrite, in iniLastWrite, chart.Format, shortname, updateMidiPath, updateMoggPath, updateImagePath)
+            AbridgedFileInfo? dtaFile = default;
+            if (stream.ReadBoolean())
+            {
+                dtaFile = new AbridgedFileInfo(ref stream);
+                if (!AbridgedFileInfo.Validate(Path.Combine(directory, dtaFile.Value.FullName), dtaFile.Value.LastWriteTime))
+                {
+                    return null;
+                }
+            }
+            else if (!iniLastWrite.HasValue && Directory.EnumerateFiles(directory).Any(file => file.EndsWith(".dta", StringComparison.OrdinalIgnoreCase)))
+            {
+                return null; // A metadata dta showed up since this entry was cached
+            }
+
+            var entry = new UnpackedIniEntry(directory, in chartLastWrite, in iniLastWrite, chart.Format,
+                shortname, updateMidiPath, updateMoggPath, updateImagePath, dtaFile)
             {
                 _indices = indices,
                 _panning = panning,
@@ -609,7 +634,9 @@ namespace YARG.Core.Song
             IniAudioSerializer.ReadAudio(ref indices, ref stream);
             IniAudioSerializer.ReadAudio(ref panning, ref stream);
 
-            var entry = new UnpackedIniEntry(directory, in chartLastWrite, in iniLastWrite, chart.Format, shortname, updateMidiPath, updateMoggPath, updateImagePath)
+            AbridgedFileInfo? dtaFile = stream.ReadBoolean() ? new AbridgedFileInfo(ref stream) : default;
+            var entry = new UnpackedIniEntry(directory, in chartLastWrite, in iniLastWrite, chart.Format,
+                shortname, updateMidiPath, updateMoggPath, updateImagePath, dtaFile)
             {
                 _indices = indices,
                 _panning = panning,
