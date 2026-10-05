@@ -382,7 +382,21 @@ namespace YARG.Core.Engine
 
             if (snapshot.Stats != null)
             {
+                // The snapshot carries the sender's band state. BandMultiplier is derived from
+                // this player's own EngineManager, and the manager's Star Power count is only
+                // updated through OnStarPowerStatus, so keep our multiplier and report any SP
+                // transition the restore causes. Otherwise a restored SP flag with a stale count
+                // gives a negative BandBonusMultiplier (band multiplier 1 - 2).
+                bool wasStarPowerActive = EngineStats.IsStarPowerActive;
+                int bandMultiplier = EngineStats.BandMultiplier;
+
                 EngineStats.CopyFrom(snapshot.Stats);
+                EngineStats.BandMultiplier = bandMultiplier;
+
+                if (wasStarPowerActive != EngineStats.IsStarPowerActive)
+                {
+                    OnStarPowerStatus?.Invoke(EngineStats.IsStarPowerActive);
+                }
             }
         }
 
