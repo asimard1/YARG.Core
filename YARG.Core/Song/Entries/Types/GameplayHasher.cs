@@ -180,7 +180,7 @@ namespace YARG.Core.Song
         {
             writer.Write((uint) Math.Round(note.Tick * scale));
             writer.Write((byte) note.NoteMask);
-            writer.Write(NormalizeType(note.Type)); // strum / hopo / tap - see DIAGNOSTIC_IGNORE_STRUM_HOPO above
+            writer.Write(NormalizeType(note.Type)); // strum / hopo / tap - see NormalizeType
             WriteQuantizedSustain(writer, note.TickLength, scale);
         }
 
